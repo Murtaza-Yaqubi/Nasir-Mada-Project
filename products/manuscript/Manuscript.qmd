@@ -1,5 +1,5 @@
 ---
-title: "Example Manuscript Template for a Data Analysis Project"
+title: "The effects of multi environmental exposure on Tuberculosis Incidence in Asian and African countris"
 author: ""
 format:
   docx:
@@ -28,7 +28,7 @@ library(knitr)
 
 **Authors**  
 
-* First Autor$^{1,2,*}$ (ORCID: 0000-0000-1234-5678) 
+* Muhammad Nasir$^{1,2,*}$ (ORCID: 0000-0000-1234-5678) 
 * Second Author$^{3, *}$
 * Third Autor$^{3, \dagger}$
 * Last Author$^{1, 2, \land}$ 
@@ -61,13 +61,38 @@ _Write a summary of your project._
 # Introduction 
 
 ## General Background Information
-_Provide enough background on your topic that others can understand the why and how of your analysis_ 
+
+Tuberculosis is old infectious disease which still exists and become major public health in the world, particularly in developing countries. Tuberculosis is linked to environmental factors. This study will analyze the effects of multi environmental factors on tuberculosis incidence in Asia and Afirca regions, where the majority of tuberculosis coming from these regions. The environmental factors and country economic and hman development index as covariates.  
 
 ## Description of data and data source
-_Describe what the data is, what it contains, where it is from, etc. Eventually this might be part of a methods section._
+
+The study will use multi sources of data including World Bank data sources, World Health Organization (WHO), United Nation for Children Fund (Unicef), and UN-HABITAT, Emissions Database for Global Atmospheric Researcg (EDGAR), and Institute for Health Metrics and Evaluation (IHME). The data contains informations of all variables in all countries globally from 2000 to 2020. The variables will include  proportion of urban opulation living in slum areas, percentage of popuation using safely managed sanitation services, percentage of population using at least basic drinking water sevice, fule for cooking, Population-weighted exposure to ambient PM2.5 pollution, total green houses, and will include GDP/ country economic status, human development index, and Universal Health Caverage as covariates. 
+
+Note: I have downloaded the dataset, but I have not conducted any cleaning or exploration on the dataset. 
+List of data sourses and website is provided in an exel fine in my data folder. I will include them in my reference for the next steps. 
 
 ## Questions/Hypotheses to be addressed
 _State the research questions you plan to answer with this analysis._
+
+The main aim of this study is to look at the impacts of environmental factors on tuberculosis incidence. 
+
+RQ: What enironmental factors asociated with tuberculosis incidence? 
+
+H0: there is no relationship between proportion ofurban population living in slum areas and tuberculosis. 
+H0: thee is no relationship between safely managed santation and tuberculosis incidence 
+H0: there is no relatinship between drinking water and tuberculosis incidence 
+H0: there is no relationship between fule for cooking and tuberculosis incidence 
+H0: there is no relationship between PM 2.5 exposure and tuberclosis incidence 
+H0: there is no association between total green gass houses and tuberculosis incidence
+
+Ha: there is  relationship between proportion ofurban population living in slum areas and tuberculosis. 
+Ha: thee is relationship between safely managed santation and tuberculosis incidence 
+Ha: there is relatinship between drinking water and tuberculosis incidence 
+Ha: there isrelationship between fule for cooking and tuberculosis incidence 
+Ha: there is relationship between PM 2.5 exposure and tuberclosis incidence 
+Ha: there is association between total green gass houses and tuberculosis incidence
+
+
 
 To cite other work (important everywhere, but likely happens first in introduction), make sure your references are in the bibtex file specified in the YAML header above and have the right bibtex key. Then you can include like this:
 
@@ -82,6 +107,7 @@ Examples of reproducible research projects can for instance be found in [@mckay2
 
 _Describe your methods. That should describe the data, the cleaning processes, and the analysis approaches. You might want to provide a shorter description here and all the details in the supplement._
 
+I haven't decide about data analysis methods. However, I am thinking to perform time series analysis and multi linear regression (if suitable) or Generealized linear model. I am still in the process of reading more papers to get more informatin which methods best suit this data and answer the research questions. 
 
 ## Schematic of workflow
 
@@ -105,6 +131,7 @@ _As applicable, explain where and how you got the data. If you directly import t
 ## Data import and cleaning
 _Write code that reads in the file and cleans it so it's ready for analysis. Since this will be fairly long code for most datasets, it might be a good idea to have it in one or several R scripts. If that is the case, explain here briefly what kind of cleaning/processing you do, and provide more details and well documented code somewhere (e.g. as supplement in a paper). All materials, including files that contain code, should be commented well so everyone can follow along._
 
+I will add the code. 
 
 ## Statistical analysis
 _Explain anything related to your statistical analyses._
