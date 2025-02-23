@@ -4,27 +4,9 @@ date: "2024-02-07"
 output: html_document
 ---
 
-  
-  
 This Quarto file loads the cleaned data and does some exploring.
 
-I'm only showing it the way where the code is included in the file. 
-As described in the `processing_code` materials, I currently prefer the approach of having R code in a separate file and pulling it in.
-
-But I already had this written and haven't yet re-done it that way. Feel free to redo and send a pull request on GitHub :)
-
-Again, it is largely a matter of preference and what makes the most sense to decide if one wants to have code inside Quarto files, or as separate R files.
-And sometimes, an R script with enough comments is good enough and one doesn't need a Quarto file.
-
-Also note that while here I split cleaning and exploring, this is iterative. You saw that as part of the processing, we already had to explore the data somewhat to understand how to clean it. In general, as you explore, you'll find things that need cleaning. As you clean, you can explore more. Therefore, at times it might make more sense to combine the cleaning and exploring code parts into a single R or Quarto file. Or split things in any other logical way.
-
-As part of the exploratory analysis, you should produce plots or tables or other summary quantities for the most interesting/important quantities in your data. Depending on the total number of variables in your dataset, explore all or some of the others. Figures produced here might be histograms or density plots, correlation plots, etc. Tables might summarize your data.
-
-Start by exploring one variable at a time. Then continue by creating plots or tables of the outcome(s) of interest and the predictor/exposure/input variables you are most interested in. If your dataset is small, you can do that for all variables. 
-
-Plots produced here can be scatterplots, boxplots, violinplots, etc. Tables can be simple 2x2 tables or larger ones.
-
-# Setup
+I \# Setup
 
 ```{r}
 #load needed packages. make sure they are installed.
@@ -32,82 +14,454 @@ library(here) #for data loading/saving
 library(dplyr)
 library(skimr)
 library(ggplot2)
-```
+install.packages("maps")
+library(maps)
+install.packages("ggcorrplot")
+library(ggcorrplot)
+install.packages("plm")
+library(plm)
+install.packages("gt")
+library(gt)
+install.packages("car")
+library(car)
+install.packages("MASS")  # Jika belum terinstall
+library(MASS)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("reshape2")  # Install the package (only needed once)
+library(reshape2)  # Load the package
+install.packages("scales")
+library(scales)
 
+library(here)
+library(knitr)
+install.packages("kableExtra")
+library(kableExtra)
+install.packages("GGally")
+library(GGally)
+# Install and load the patchwork package
+install.packages("patchwork")
+library(patchwork)
+```
 
 Load the data.
 
 ```{r}
 #Path to data. Note the use of the here() package and not absolute paths
-data_location <- here::here("data","processed-data","processeddata.rds")
+data_location <- here::here("data","processed-data","clean_noslum.rds")
+
 #load data
 mydata <- readRDS(data_location)
+
+
+#subset for south east and Asia Africa only 
+asia_africa <- mydata %>% 
+  filter(region == c("South-East Asia", "Africa"))
+unique(asia_africa$country)
+
+saveRDS(asia_africa, here("data", "processed-data", "asia_africa.rds"))
 ```
-
-
-
-
 
 # Data exploration through tables
 
-Showing a bit of code to produce and save a summary table.
+```{r}
+
+# Define distinct colors for each country
+country_colors <- c(
+  "Algeria" = "#E6194B",  # Red
+  "Bangladesh" = "#3CB44B",  # Green
+  "Central African Republic" = "#FFE119",  # Yellow
+  "Chad" = "#4363D8",  # Blue
+  "Ethiopia" = "#F58231",  # Orange
+  "Ghana" = "#911EB4",  # Purple
+  "Indonesia" = "#42D4F4",  # Light Blue
+  "Lesotho" = "#F032E6",  # Pink
+  "Madagascar" = "#FABEBE",  # Light Red
+  "Malawi" = "#469990",  # Teal
+  "Myanmar" = "#E6BEFF",  # Lavender
+  "Nepal" = "#9A6324",  # Brown
+  "Senegal" = "#FFFAC8",  # Cream
+  "Sri Lanka" = "#800000",  # Maroon
+  "Tanzania" = "#A9A9A9",  # Gray
+  "Togo" = "#FFD8B1",  # Peach
+  "Uganda" = "#000075",  # Dark Blue
+  "Zimbabwe" = "#808000"  # Olive
+)
+
+# Convert country to a factor
+asia_africa$country <- as.factor(asia_africa$country)
+
+# Create boxplot with borders
+plot1 <- ggplot(asia_africa, aes(x = country, y = tbi, fill = country)) +
+  geom_boxplot(color = "black", size = 0.1) +  # Add black border with thicker lines
+  scale_fill_manual(values = country_colors) +  # Manually assign colors
+  labs(title = "Boxplot of TBI by Country",
+       x = "Country",
+       y = "TBI") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1),  # Rotate labels for readability
+        panel.border = element_rect(color = "black", fill = NA, size = 1.5))  # Add outer frame
+
+plot_box <- here( "code","eda-code", "figures", "boxplot.png") # to set up location for the pictures created 
+ggsave(filename = plot_box, plot=plot1, width = 12, height = 8, units = "in", dpi = 300) # save the pictures created 
+
+plot(plot1)
+
+```
+
+```{r}
+
+
+# Select only numeric columns (excluding country, year, and region)
+asia_africa_long <- asia_africa %>%
+  select(-region) %>%  # Exclude categorical variable
+  pivot_longer(cols = -c(country, year),  # Convert all numeric variables except country & year
+               names_to = "Variable", 
+               values_to = "Value")
+
+# Create line plots for all variables
+plot2 <- ggplot(asia_africa_long, aes(x = year, y = Value, group = country, color = country)) +
+  geom_line(size = 1, alpha = 0.8) +  # Alpha for transparency
+  facet_wrap(~ Variable, scales = "free_y") +  # Separate plots for each variable
+  labs(title = "Trends of All Variables Over Time",
+       x = "Year",
+       y = "Value",
+       color = "Country") +
+  theme_minimal() +
+  theme(legend.position = "none",  # Hide legend for clarity
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot_spageti <- here( "code","eda-code", "figures", "spageti.png") # to set up location for the pictures created 
+ggsave(filename = plot_spageti, plot=plot2, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
+
+plot(plot2)
+```
+
+```{r}
+plot3 <- ggplot(asia_africa, aes(x = year, y = tbi, group = country, color = country)) +
+  geom_line(alpha = 0.7) +  # Transparency to see overlapping lines
+  labs(title = "Spaghetti Plot of TBC Incidence",
+       x = "Year",
+       y = "TBC Incidence") +
+  theme_minimal() +
+  theme(legend.position = "none") 
+
+plot_spageti_all <- here( "code","eda-code", "figures", "spageti-tbi.png") # to set up location for the pictures created 
+ggsave(filename = plot_spageti_all, plot=plot3, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
+
+plot(plot3)
+```
+
+***Creating plots to show the trend of all variables in each country over the year***
+
+```{r}
+# Find a scaling factor to adjust TBI to match percentage values
+max_indicator <- max(asia_africa[, c("pro_safesanitation", "pro_basicsanitation", "pro_safewater", "pro_basicwater", "pro_cleanfuel")], na.rm = TRUE)
+max_tbi <- max(asia_africa$tbi, na.rm = TRUE)
+scale_factor <- max_indicator / max_tbi  # Scale TBI to fit
+
+# Reshape the data from wide to long format
+asia_africa_long <- asia_africa %>%
+  pivot_longer(cols = c(pro_safesanitation, pro_basicsanitation, pro_safewater, pro_basicwater, pro_cleanfuel),
+               names_to = "Indicator", 
+               values_to = "Value")
+
+# Create the plot
+plot4 <- ggplot() +
+  # First, plot water, sanitation, and clean fuel indicators
+  geom_line(data = asia_africa_long, 
+            aes(x = year, y = Value, color = Indicator, group = Indicator), 
+            size = 1) +
+  # Add TBI as a separate line with a different scale
+  geom_line(data = asia_africa, 
+            aes(x = year, y = tbi * scale_factor, color = "TBI"), 
+            size = 1, linetype = "dashed") + 
+  facet_wrap(~ country) +  # Separate plots for each country
+  theme_minimal() +
+  labs(title = "Percentage of Population with Access to Water, Sanitation, Clean Fuel & TBI Trends",
+       x = "Year",
+       y = "Percentage (%)",
+       color = "Indicator") +  # Label for legend
+  scale_y_continuous(sec.axis = sec_axis(~ . / scale_factor, name = "TBI")) +  # Secondary Y-axis for TBI
+  scale_color_manual(values = c("blue", "green", "purple", "orange", "brown", "red")) +  # Custom colors
+  theme(legend.position = "bottom",  
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.border = element_rect(color = "black", fill = NA, size = 1))  # Rotate x-axis labels for readability
+
+
+plot_location1 <- here( "code","eda-code", "figures", "line-graph-tbivsfactors.png") # to set up location for the pictures created 
+ggsave(filename = plot_location1, plot=plot4, width = 12, height = 16, units = "in", dpi = 300) # save the pictures created 
+plot(plot4)
+```
+
+Check the layout after saving the figures
+
+```{r}
+
+#| label: fig-multivariable 
+#| fig-cap: "Line charts of all variables"
+#| echo: FALSE
+knitr::include_graphics(here("code", "eda-code", "figures", "line-graph-tbivsfactors.png"))
+```
+
+
+
+
+***I want to show the mean of each variable every year based on regions***
+
+```{r}
+# Load required libraries
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(here)
+
+# Define row colors for each category
+row_colors <- c(
+  "TBI" = "#FFD700", # Gold
+  "GDP" = "#ADD8E6", # Light Blue
+  "HDI" = "#90EE90", # Light Green
+  "Clean Fuel" = "#FFB6C1", # Light Pink
+  "Safe Water" = "#87CEEB", # Sky Blue
+  "Basic Sanitation" = "#FFA07A", # Light Salmon
+  "Safe Sanitation" = "#F08080", # Light Coral
+  "PM2.5" = "#D3D3D3", # Light Gray
+  "Greenhouse" = "#B0C4DE" # Light Steel Blue
+)
+
+# Create summary per year
+summary_table <- asia_africa %>%
+  group_by(year) %>%  
+  summarise(
+    Min_TBI = min(tbi, na.rm = TRUE),
+    Mean_TBI = mean(tbi, na.rm = TRUE),
+    Max_TBI = max(tbi, na.rm = TRUE),
+    SD_TBI = sd(tbi, na.rm = TRUE),
+    
+    Min_GDP = min(gdp, na.rm = TRUE),
+    Mean_GDP = mean(gdp, na.rm = TRUE),
+    Max_GDP = max(gdp, na.rm = TRUE),
+    SD_GDP = sd(gdp, na.rm = TRUE),
+    
+    Min_HDI = min(hdi, na.rm = TRUE),
+    Mean_HDI = mean(hdi, na.rm = TRUE),
+    Max_HDI = max(hdi, na.rm = TRUE),
+    SD_HDI = sd(hdi, na.rm = TRUE),
+    
+    Min_CleanFuel = min(pro_cleanfuel, na.rm = TRUE),
+    Mean_CleanFuel = mean(pro_cleanfuel, na.rm = TRUE),
+    Max_CleanFuel = max(pro_cleanfuel, na.rm = TRUE),
+    SD_CleanFuel = sd(pro_cleanfuel, na.rm = TRUE),
+    
+    Min_SafeWater = min(pro_safewater, na.rm = TRUE),
+    Mean_SafeWater = mean(pro_safewater, na.rm = TRUE),
+    Max_SafeWater = max(pro_safewater, na.rm = TRUE),
+    SD_SafeWater = sd(pro_safewater, na.rm = TRUE),
+    
+    Min_BasicSanitation = min(pro_basicsanitation, na.rm = TRUE),
+    Mean_BasicSanitation = mean(pro_basicsanitation, na.rm = TRUE),
+    Max_BasicSanitation = max(pro_basicsanitation, na.rm = TRUE),
+    SD_BasicSanitation = sd(pro_basicsanitation, na.rm = TRUE),
+    
+    Min_SafeSanitation = min(pro_safesanitation, na.rm = TRUE),
+    Mean_SafeSanitation = mean(pro_safesanitation, na.rm = TRUE),
+    Max_SafeSanitation = max(pro_safesanitation, na.rm = TRUE),
+    SD_SafeSanitation = sd(pro_safesanitation, na.rm = TRUE),
+    
+    Min_PM2.5 = min(mean_exposure_pm2.5, na.rm = TRUE),
+    Mean_PM2.5 = mean(mean_exposure_pm2.5, na.rm = TRUE),
+    Max_PM2.5 = max(mean_exposure_pm2.5, na.rm = TRUE),
+    SD_PM2.5 = sd(mean_exposure_pm2.5, na.rm = TRUE),
+
+    Min_Greenhouse = min(total_greenhouses, na.rm = TRUE),
+    Mean_Greenhouse = mean(total_greenhouses, na.rm = TRUE),
+    Max_Greenhouse = max(total_greenhouses, na.rm = TRUE),
+    SD_Greenhouse = sd(total_greenhouses, na.rm = TRUE)
+  ) %>%
+  pivot_longer(cols = -year, names_to = "Statistic", values_to = "Value") %>%
+  pivot_wider(names_from = year, values_from = Value) %>% # Convert to wide format
+  rowwise() %>% 
+  mutate(Accumulated = mean(c_across(where(is.numeric)), na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(across(where(is.numeric), ~ sprintf("%.2f", .x))) %>% # Format numbers to 2 decimal places
+  relocate(Accumulated, .after = Statistic) %>% # Move Accumulated after Statistic
+  mutate(Row_Index = row_number(), # Create row indices for coloring
+         Category = case_when(
+           grepl("TBI", Statistic) ~ "TBI",
+           grepl("GDP", Statistic) ~ "GDP",
+           grepl("HDI", Statistic) ~ "HDI",
+           grepl("CleanFuel", Statistic) ~ "Clean Fuel",
+           grepl("SafeWater", Statistic) ~ "Safe Water",
+           grepl("BasicSanitation", Statistic) ~ "Basic Sanitation",
+           grepl("SafeSanitation", Statistic) ~ "Safe Sanitation",
+           grepl("PM2.5", Statistic) ~ "PM2.5",
+           grepl("Greenhouse", Statistic) ~ "Greenhouse"
+         ))
+
+# Generate table with colors
+summary_table_display <- summary_table %>%
+  select(-Category, -Row_Index) %>% # Remove Category before displaying
+  kable(caption = "Summary Statistics by Year with Accumulated Column") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+
+
+
+# Apply row coloring dynamically
+for (cat in names(row_colors)) {
+  rows_to_color <- which(summary_table$Category == cat) # Get row indices
+  summary_table_display <- summary_table_display %>%
+    row_spec(rows_to_color, background = row_colors[cat])
+}
+
+
+saveRDS(summary_table_display, file = here("code", "eda-code", "tables", "summary_table.html"))
+print(summary_table_display)
+
+
+```
+
+```{r}
+#| label: tbl-resulttable1
+#| tbl-cap: "Summary Statistics Table"
+#| echo: FALSE
+
+htmltools::includeHTML(here("code", "eda-code", "tables", "summary_table.html"))
+
+```
+
+
+## Data Analysis 
+
+
+***Test the linearity***
 
 
 ```{r}
-summary_df = skimr::skim(mydata)
-print(summary_df)
-# save to file
-summarytable_file = here("results", "tables", "summarytable.rds")
-saveRDS(summary_df, file = summarytable_file)
+gg1 <- ggplot(asia_africa, aes(x = gdp, y = tbi)) +
+  geom_point() +  # Create scatter plot
+  ggtitle("Scatter Plot: tbi vs GDP") +  # Add title
+  xlab("GDP") +  # Label the x-axis
+  ylab("TBI") +  # Label the y-axis
+  theme_minimal()
+
+gg2 <- 
 ```
 
-We are saving the results to the `results` folder. Depending on how many tables/figures you have, it might make sense to have separate folders for each. And/or you could have separate folders for exploratory tables/figures and for final tables/figures. Just choose a setup that makes sense for your project and works for you, and provide enough documentation that someone can understand what you are doing.
-
-
-# Data exploration through figures
-
-Histogram plots for the continuous outcomes. 
-
-Height first.
 
 ```{r}
-p1 <- mydata %>% ggplot(aes(x=Height)) + geom_histogram() 
-plot(p1)
-figure_file = here("results", "figures","height-distribution.png")
-ggsave(filename = figure_file, plot=p1) 
+
+
+
+
+# Create a list of scatter plots for each independent variable against tbi
+plots <- lapply(independent_vars, function(var) {
+  ggplot(asia_africa, aes_string(x = var, y = "tbi")) +
+    geom_point() + 
+    ggtitle(paste("tbi vs", var)) + 
+    xlab(var) + 
+    ylab("TBI") + 
+    theme_minimal()
+})
+
+# Combine all plots into a single frame
+combined_plot <- wrap_plots(plots, ncol = 3)  # Adjust ncol to the number of columns you want
+combined_plot
+
+combineplot_location <- here( "code","eda-code", "figures", "scatterplot.png") # to set up location for the pictures created 
+ggsave(filename = combineplot_location, plot=combined_plot, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(combined_plot)
+
 ```
 
-Now weights.
+
+
+
+ Spearman's Rank Correlation (Recommended) Spearman correlation is a non-parametric method that measures monotonic relationships (whether the variables move together, not necessarily linearly).
 
 ```{r}
-p2 <- mydata %>% ggplot(aes(x=Weight)) + geom_histogram() 
-plot(p2)
-figure_file = here("results", "figures","weight-distribution.png")
-ggsave(filename = figure_file, plot=p2) 
+
+# Compute Spearman correlation matrix
+cor_matrix_spearman <- cor(asia_africa[, c("tbi","gdp", "hdi", "pro_cleanfuel", "pro_safewater", 
+                                           "pro_basicsanitation", "pro_safesanitation", "mean_exposure_pm2.5", "total_greenhouses")], method = "spearman", use = "complete.obs")
+
+
+
+# Melt the matrix into long format for ggplot
+
+cor_melted <- melt(cor_matrix_spearman)
+
+# Plot heatmap
+plot5 <- ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+  geom_text(aes(label = round(value, 2)), size = 4) +  # Show correlation values
+  theme_minimal() +
+  labs(title = "Spearman Correlation Heatmap", x = "", y = "")
+matrix_location <- here( "code","eda-code", "figures", "correlation_matrix.png") # to set up location for the pictures created 
+ggsave(filename = matrix_location, plot=plot5, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(plot5)
 ```
 
-Now height as function of weight.
+
 
 ```{r}
-p3 <- mydata %>% ggplot(aes(x=Height, y=Weight)) + geom_point() + geom_smooth(method='lm')
-plot(p3)
-figure_file = here("results", "figures", "height-weight.png")
-ggsave(filename = figure_file, plot=p3) 
+
+#| label: fig-Spearman's Correlation Matrix 
+#| fig-cap: "Spearman's Correlation Matrix "
+#| echo: FALSE
+knitr::include_graphics(here("code", "eda-code", "figures", "correlation_matrix.png"))
 ```
 
-Once more height as function of weight, stratified by gender. Note that there is so little data, it's a bit silly. But we'll plot it anyway.
+
+I will performed longitudinal data analysis
 
 ```{r}
-p4 <- mydata %>% ggplot(aes(x=Height, y=Weight, color = Gender)) + geom_point() + geom_smooth(method='lm')
-plot(p4)
-figure_file = here("results", "figures", "height-weight-stratified.png")
-ggsave(filename = figure_file, plot=p4) 
+library(car)
+#vif(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+       pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, data = pdata)) # The error might be occure due to multicolinearity 
+
+#alias(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+         pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, data = asia_africa))
+
+
+
+stepwise_model <- stepAIC(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+                             pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, 
+                             data = asia_africa), direction = "both") # drop variable with multicolinearity 
+
+summary(stepwise_model)
+
 ```
 
+***Performing longitudinal analysis***
 
+Test for mixed or fixed effect using Hausman Test
 
-# Notes
+```{r}
+pdata <- pdata.frame(asia_africa, index = c("country", "year"))
 
-For your own explorations, tables and figures can be "quick and dirty". As long as you can see what's going on, there is no need to polish them. That's in contrast to figures you'll produce for your final products (paper, report, presentation, website, etc.). Those should look as nice, polished and easy to understand as possible.
+fe_model <- plm(tbi ~ pro_basicsanitation + mean_exposure_pm2.5, 
+                data = pdata, model = "within")
+re_model <- plm(tbi ~ pro_basicsanitation + mean_exposure_pm2.5, 
+                data = pdata, model = "random")
 
+hausman_test <- phtest(fe_model, re_model)
+print(hausman_test)
 
+```
+
+Based on the Hausman Test, fixed effect is not consistent. Therefore, I will use mixed effect test.
+
+```{r}
+summary(re_model)
+```
+
+Interpretation: ***1. variance components Analyisis***
+
+88% dari total variasi berasal dari perbedaan antar negara, menunjukkan bahwa perbedaan karakteristik tiap negara sangat berpengaruh terhadap insiden TBC.
+
+12% berasal dari variasi idiosinkratik, atau faktor yang berubah dari waktu ke waktu dalam suatu negara.
+
+***2. Theta***
+
+Rata-rata theta = 0.8868, menunjukkan bahwa sebagian besar variasi dalam data disebabkan oleh perbedaan antar negara. Theta yang mendekati 1 berarti bahwa individu (negara) memiliki efek spesifik yang kuat dibandingkan variasi waktu.

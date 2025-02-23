@@ -1,5 +1,5 @@
 ---
-title: "The effects of multi environmental exposure on Tuberculosis Incidence in Asian and African countris"
+title: "The effects of multi environmental exposures on Tuberculosis Incidence in South East Asian and African countris"
 author: ""
 format:
   docx:
@@ -12,11 +12,6 @@ editor:
   markdown: 
     wrap: 72
 ---
-
-The structure below is one possible setup for a manuscript, or a general
-data analysis project (including the course project). Adjust as needed.
-You don't need to have exactly these sections, but the content covering
-those sections should be addressed.
 
 This uses MS Word as output format. [See
 here](https://quarto.org/docs/output-formats/ms-word.html) for more
@@ -148,23 +143,43 @@ Examples of reproducible research projects can for instance be found in
 
 # Methods
 
-*Describe your methods. That should describe the data, the cleaning
-processes, and the analysis approaches. You might want to provide a
-shorter description here and all the details in the supplement.*
+The datasets were loded one by one, then drop all unused variable before
+comined those datasets using reduce() function. Countries, which have at
+least one missing years from 2000 to 2020, were dropped from the study.
+To make sure that the data is clean and ready to analyse, all missing
+values were dropped. This study focuses on South East Asia and Africa
+Regions, where the major proportion of tuberculosis cases came.
+Therefore, a newsubset for South East Asia and African countries was
+created.
 
-I haven't decide about data analysis methods. However, I am thinking to
-perform time series analysis and multi linear regression (if suitable)
-or Gene-realized linear model (we will see after conducting data
-exploration). I am still in the process of reading more papers to get
-more information which methods best suit this data and answer the
-research questions.
+After data cleaning, multiple exploratory data analysis was forformed
+such us summary and vizualising the data. A bloxplot was created to show
+Tuberculosis Incidence in each country during the time frame. Spagheti
+plot was created to visualize the trend of tuberculosis incidence and
+other variables over the time. Lastly, line charts showing the trend of
+all variables in each country.
+
+The exploratory data analysis showed that the data were not normally
+distributed and there was no linear relationship between tuberculosis
+incidence and other predictors. Therefore, Spearman's correlation matrix
+was perfomed to see the correlations. To have better understanding, a
+heatmap matrix plot was created to show the correlation.
+
+The main statistical analysis in thie study is longitudinal data
+analysis (eithre fixed effect or mixed effect method). To see which one
+is better, Hausman Test was performed to determine which model is
+better.
+
+NOTE: I still need to discuss and need more advice about the data
+analysis from Dr. Handel
 
 ## Schematic of workflow
 
-Sometimes you might want to show a schematic diagram/figure that was not
-created with code (if you can do it with code, do it). @fig-schematic is
-an example of some - completely random/unrelated - schematic that was
-generated with Biorender. We store those figures in the `assets` folder.
+NOTE: I AM STILL WORKING TO FIGUR THIS ONE OUT Sometimes you might want
+to show a schematic diagram/figure that was not created with code (if
+you can do it with code, do it). @fig-schematic is an example of some -
+completely random/unrelated - schematic that was generated with
+Biorender. We store those figures in the `assets` folder.
 
 ```{r}
 #| label: fig-schematic
@@ -181,13 +196,12 @@ World Bank, WHA, UNICEF, UN-HABITAT, EDGAR, and IHME.
 
 ## Data import and cleaning
 
-*Write code that reads in the file and cleans it so it's ready for
-analysis. Since this will be fairly long code for most dataset, it might
-be a good idea to have it in one or several R scripts. If that is the
-case, explain here briefly what kind of cleaning/processing you do, and
-provide more details and well documented code somewhere (e.g. as
-supplement in a paper). All materials, including files that contain
-code, should be commented well so everyone can follow along.*
+Data Import and data cleaning process have been explained in the methode
+part. To see the code for data import and data cleaning , please visit
+working directory ("code", "processing-code", "processingfile.qdm").
+Processed and clean data are saved at a folder ("data",
+"processed-data"). There are many .rds files in the folder icnlduing
+file for each variables, and file after combined all variables.
 
 Dataset are either in excel or CSV files. Several steps from loading to
 data analysis:
@@ -195,8 +209,6 @@ data analysis:
 -   to load the data set in this part using read_excel or read_csv.
 
 -   to combine them base on country name/ code and years.
-
-<!-- -->
 
 -   to drop unwanted variables
 
@@ -220,20 +232,12 @@ data analysis:
 
 ## Exploratory/Descriptive analysis
 
-*Use a combination of text/tables/figures to explore and describe your
-data. Show the most important descriptive results here. Additional ones
-should go in the supplement. Even more can be in the R and Quarto files
-that are part of your project.*
+There are some exploratory data analysis conducted and resulted table,
+and charts. Table 1 shows the summary statistics including min, mean,
+max, and standard deviation of all variables.
 
-@tbl-summarytable shows a summary of the data.
-
-Note the loading of the data providing a **relative** path using the
-`../../` notation. (Two dots means a folder up). You never want to
-specify an **absolute** path like `C:\ahandel\myproject\results\`
-because if you share this with someone, it won't work for them since
-they don't have that path. You can also use the `here` R package to
-create paths. See examples of that below. I generally recommend the
-`here` package.
+NOTE: I still have issue in saving the stiled tables. I am still working
+on it. I will show it next step.
 
 ```{r}
 #| label: tbl-summarytable
@@ -243,7 +247,93 @@ resulttable=readRDS("../../results/tables/summarytable.rds")
 knitr::kable(resulttable)
 ```
 
+The line graph ( @fig-1 ) shows the trend of all variables over the
+period in each country. It can be seen that the majority of country
+showed the decreases trend in tuberculosis incidence over 21 years
+period, except Lesotho showing a sharp increase until the middle of the
+period before dramatic decrease until the end of the period. All
+countries showed the increase trend in percentage of population using
+using basic and safe drinking water, basic and safe sanitation, and
+clean fuel and technology for cooking, except Zimbabuwe showing the
+decrease in percentage of population using basic drinking water and safe
+sanitation, and Senegal showing the decrease of population using clean
+fuel and technology for cooking.
+
+```{r}
+
+#| label: fig-1
+#| fig-cap: "Trends of all variable over the period in each country"
+#| echo: FALSE
+knitr::include_graphics(here("code","eda-code","figures","line-graph-tbivsfactors.png"))
+
+```
+
+( @fig-2 ) shows spaghetti plots in each variables. We can see the
+trends of each country in every variables. It can be seen that generally
+most of the countries show the increase trends in water and sanitation,
+clean fuel use, human development index, total greenhouses, but
+fluctuated trends in mean of PM2.5 expousures.
+
+```{r}
+
+#| label: fig-2
+#| fig-cap: "Spaghetti plots in each variables"
+#| echo: FALSE
+knitr::include_graphics(here("code","eda-code","figures","spageti.png"))
+
+```
+
+Now lets take a more detail tuberculosis incidence in each country over
+the year using the following box plot. Lesotho leads the incidence
+followed by Myanmar and Tanzania.
+
+```{r}
+
+#| label: fig-3
+#| fig-cap: "Spaghetti plots in each variables"
+#| echo: FALSE
+knitr::include_graphics(here("code","eda-code","figures","boxplot.png"))
+
+```
+
+
+
 ## Basic statistical analysis
+
+As first step of statistical analysis. Using scatterplot to show the linearity between tuberculosis incidence and predictors. ( @fig-4 ) shows the scatterplots. The scatterplots do not show linear relationship between tuberculosis Incidence and predictors. 
+
+
+```{r}
+
+#| label: fig-4
+#| fig-cap: "Scatter plots between Tuberculosis Incidence and Predictors "
+#| echo: FALSE
+knitr::include_graphics(here("code","eda-code","figures","scatterplot.png"))
+
+```
+Before going further, we need to look at correlation between tuberculosis Incidence and all predictors. 
+
+Since they show nonlinearity, spearman's correlation performed and hsowing in the following correlation matrix. See ( @fig-5 )
+
+```{r}
+
+
+#| label: fig-5
+#| fig-cap: "Spearman Correlation Matrix "
+#| echo: FALSE
+knitr::include_graphics(here("code","eda-code","figures","correlation_matrix.png"))
+
+```
+
+
+Since there is no linear relationship, nonlinear relationship test was performed. 
+
+```{r}
+
+
+```
+
+
 
 *To get some further insight into your data, if reasonable you could
 compute simple statistics (e.g. simple models with 1 predictor) to look

@@ -1,0 +1,316 @@
+---
+title: "statistical-analysis"
+format: html
+editor: visual
+---
+
+## 
+
+
+```{r}
+#load needed packages. make sure they are installed.
+library(here) #for data loading/saving
+library(dplyr)
+library(skimr)
+library(ggplot2)
+install.packages("maps")
+library(maps)
+install.packages("ggcorrplot")
+library(ggcorrplot)
+install.packages("plm")
+library(plm)
+install.packages("gt")
+library(gt)
+install.packages("car")
+library(car)
+install.packages("MASS")  # Jika belum terinstall
+library(MASS)
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("reshape2")  # Install the package (only needed once)
+library(reshape2)  # Load the package
+install.packages("scales")
+library(scales)
+
+library(here)
+library(knitr)
+install.packages("kableExtra")
+library(kableExtra)
+install.packages("GGally")
+library(GGally)
+# Install and load the patchwork package
+install.packages("patchwork")
+library(patchwork)
+
+install.packages("gridExtra")  # If not installed
+library(gridExtra)
+```
+
+
+Load the dataset
+```{r}
+
+asia_africa_location <- here("data", "processed-data", "asia_africa.rds")
+readRDS(asia_africa_location)
+
+colnames(asia_africa)
+```
+
+
+
+
+
+## Data Analysis 
+
+***Test the linearity***
+
+
+
+```{r}
+
+# Create a list of scatter plots for each independent variable against tbi
+plots <- lapply(independent_vars, function(var) {
+  ggplot(asia_africa, aes_string(x = var, y = "tbi")) +
+    geom_point() + 
+    ggtitle(paste("tbi vs", var)) + 
+    xlab(var) + 
+    ylab("TBI") + 
+    theme_minimal()
+})
+
+# Combine all plots into a single frame
+combined_plot <- wrap_plots(plots, ncol = 3)  # Adjust ncol to the number of columns you want
+
+
+combineplot_location <- here( "code","analysis-code", "figures", "scatterplot.png") # to set up location for the pictures created 
+ggsave(filename = combineplot_location, plot=combined_plot, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(combined_plot)
+
+```
+
+```{r}
+
+# Step 1: Ensure all numeric variables are correctly formatted
+asia_africa <- asia_africa %>%
+  mutate(across(c(tbi, pro_cleanfuel, pro_basicwater, pro_safewater, 
+                  mean_exposure_pm2.5, total_greenhouses, pro_basicsanitation, 
+                  pro_safesanitation, gdp, hdi), as.numeric)) %>%
+  drop_na()  # Remove rows with missing values to avoid ggplot errors
+
+asia_africa <- asia_africa %>%
+  mutate(poly_greenhouses = as.numeric(poly(total_greenhouses, degree = 2, raw = TRUE)[,1]))
+
+
+# Step 2: Reshape the dataset for visualization
+asia_africa_long <- asia_africa %>%
+  select(-country, -region, -year) %>%  # Exclude categorical variables
+  pivot_longer(cols = -tbi, names_to = "predictor", values_to = "value")
+
+# Step 3: Check if pivot_longer() worked correctly
+print(head(asia_africa_long))
+
+# Step 4: Generate scatterplots with loess smoothing to detect nonlinear patterns
+plot_nonlinear <- ggplot(asia_africa_long, aes(x = value, y = tbi)) +
+  geom_point(alpha = 0.5) +  # Scatterplot points
+  geom_smooth(method = "loess", color = "red") +  # Loess smoothing for nonlinear trends
+  facet_wrap(~predictor, scales = "free") +  # Create separate plots for each predictor
+  theme_minimal()
+
+# Step 5: Display the plot
+print(plot_nonlinear)
+
+
+
+nonlinear_location <- here( "code","analysis-code", "figures", "nonlinear.png") # to set up location for the pictures created 
+ggsave(filename = nonlinear_location, plot=plot_nonlinear, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(combined_plot)
+```
+
+
+
+
+```{r}
+glm_model <- glm(tbi ~ gdp + hdi + pro_basicsanitation + pro_basicwater + 
+                 pro_safesanitation + pro_safewater + pro_cleanfuel + 
+                 mean_exposure_pm2.5 + total_greenhouses, 
+                 family = poisson(link = "log"), data = asia_africa)
+summary(glm_model)
+
+plot(glm_model)
+
+```
+Q-Q plot of residuals from the Poisson GLM suggests that the model is not fitting the data well. The deviation from the straight line, especially at higher quantiles (outliers labeled 78, 79, 80), indicates overdispersion—where the variance of tbi is larger than the mean, violating the Poisson assumption.
+
+
+```{r}
+dispersion_test <- sum(residuals(glm_model, type="pearson")^2) / glm_model$df.residual
+dispersion_test  # If > 1.5, overdispersion exists
+
+```
+since the result is very high, which should be close to 1. We need a model that can hanlde overdispersion 
+
+```{r}
+library(MASS)
+glm_nb <- glm.nb(tbi ~ gdp + hdi + pro_basicsanitation + pro_basicwater + 
+                 pro_safesanitation + pro_safewater + pro_cleanfuel + 
+                 mean_exposure_pm2.5 + total_greenhouses, data = asia_africa)
+summary(glm_nb)
+
+```
+
+Interpretation: 
+
+1. Overdispersion Check
+The estimated Theta (4.246, SE = 0.430) suggests that overdispersion is present but is well-accounted for by the Negative Binomial model.
+The Residual Deviance (196.14) is much lower than the Null Deviance (409.01), meaning the model fits the data better than a null model.
+Dispersion parameter = 1, confirming that the Negative Binomial model is appropriate.
+
+
+The predictors that significantly impact TBI (tbi) are:
+
+- hdi (-7.642, p < 2e-16) Higher HDI is associated with lower tbi cases.
+- pro_basicsanitation (0.00577, p = 0.0334)  Increased access to basic sanitation is linked to a slight increase in tbi.
+- pro_basicwater (0.0318, p = 9.42e-16) → Higher access to basic water is positively associated with tbi.
+- pro_safewater (-0.00856, p = 0.0414) → Increased safe water access reduces tbi.
+- pro_cleanfuel (-0.005999, p = 0.0137) → More use of clean fuels is linked to lower tbi.
+- mean_exposure_pm2.5 (-0.02698, p < 2e-16) → Higher PM2.5 exposure reduces tbi (unexpected; may need further investigation).
+
+
+
+Data Transfomation 
+
+```{r}
+asia_africa <- asia_africa %>%
+  mutate(log_tbi = log(tbi + 1),
+         log_cleanfuel = log(pro_cleanfuel + 1),
+         log_basicwater = log(pro_basicwater + 1),
+         log_basicsanitation = log(pro_basicsanitation + 1),
+         log_safewater = log(pro_safewater + 1),
+         log_safesanitation = log(pro_safesanitation + 1),
+         poly_greenhouses = poly(total_greenhouses, 2))  # 2nd-degree polynomial
+
+```
+
+
+```{r}
+library(mgcv)
+
+gam_model <- gam(tbi ~ s(pro_cleanfuel) + s(pro_basicwater) + s(pro_safewater) +
+                   s(mean_exposure_pm2.5) + s(total_greenhouses) +
+                   s(pro_basicsanitation) + s(pro_safesanitation) +
+                   s(gdp) + s(hdi), data = asia_africa, method = "REML")
+
+summary(gam_model)
+gamplot<- plot(gam_model, pages = 1)
+
+
+```
+
+
+```{r}
+# Calculate correlations
+cor(asia_africa$tbi, asia_africa$gdp)
+cor(asia_africa$tbi, asia_africa$mean_exposure_pm2.5)
+cor(asia_africa$tbi, asia_africa$hdi)
+cor(asia_africa$tbi, asia_africa$pro_cleanfuel)
+cor(asia_africa$tbi, asia_africa$pro_basicwater)
+cor(asia_africa$tbi, asia_africa$pro_safewater)
+cor(asia_africa$tbi, asia_africa$pro_basicsanitation)
+cor(asia_africa$tbi, asia_africa$pro_safesanitation)
+cor(asia_africa$tbi, asia_africa$mean_exposure_pm2.5)
+
+
+
+```
+
+
+
+Spearman's Rank Correlation (Recommended) Spearman correlation is a non-parametric method that measures monotonic relationships (whether the variables move together, not necessarily linearly).
+
+```{r}
+
+# Compute Spearman correlation matrix
+cor_matrix_spearman <- cor(asia_africa[, c("tbi","gdp", "hdi", "pro_cleanfuel", "pro_safewater", 
+                                           "pro_basicsanitation", "pro_safesanitation", "mean_exposure_pm2.5", "total_greenhouses")], method = "spearman", use = "complete.obs")
+
+
+
+# Melt the matrix into long format for ggplot
+
+cor_melted <- melt(cor_matrix_spearman)
+
+# Plot heatmap
+plot5 <- ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
+  geom_text(aes(label = round(value, 2)), size = 4) +  # Show correlation values
+  theme_minimal() +
+  labs(title = "Spearman Correlation Heatmap", x = "", y = "")
+matrix_location <- here( "code","eda-code", "figures", "correlation_matrix.png") # to set up location for the pictures created 
+ggsave(filename = matrix_location, plot=plot5, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(plot5)
+```
+
+
+
+```{r}
+
+#| label: fig-Spearman's Correlation Matrix 
+#| fig-cap: "Spearman's Correlation Matrix "
+#| echo: FALSE
+knitr::include_graphics(here("code", "eda-code", "figures", "correlation_matrix.png"))
+```
+
+
+I will performed longitudinal data analysis
+
+```{r}
+library(car)
+#vif(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+       pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, data = pdata)) # The error might be occure due to multicolinearity 
+
+#alias(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+         pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, data = asia_africa))
+
+
+
+stepwise_model <- stepAIC(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+                             pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, 
+                             data = asia_africa), direction = "both") # drop variable with multicolinearity 
+
+summary(stepwise_model)
+
+```
+
+***Performing longitudinal analysis***
+
+Test for mixed or fixed effect using Hausman Test
+
+```{r}
+pdata <- pdata.frame(asia_africa, index = c("country", "year"))
+
+fe_model <- plm(tbi ~ pro_basicsanitation + mean_exposure_pm2.5, 
+                data = pdata, model = "within")
+re_model <- plm(tbi ~ pro_basicsanitation + mean_exposure_pm2.5, 
+                data = pdata, model = "random")
+
+hausman_test <- phtest(fe_model, re_model)
+print(hausman_test)
+
+```
+
+Based on the Hausman Test, fixed effect is not consistent. Therefore, I will use mixed effect test.
+
+```{r}
+summary(re_model)
+```
+
+Interpretation: ***1. variance components Analyisis***
+
+88% dari total variasi berasal dari perbedaan antar negara, menunjukkan bahwa perbedaan karakteristik tiap negara sangat berpengaruh terhadap insiden TBC.
+
+12% berasal dari variasi idiosinkratik, atau faktor yang berubah dari waktu ke waktu dalam suatu negara.
+
+***2. Theta***
+
+Rata-rata theta = 0.8868, menunjukkan bahwa sebagian besar variasi dalam data disebabkan oleh perbedaan antar negara. Theta yang mendekati 1 berarti bahwa individu (negara) memiliki efek spesifik yang kuat dibandingkan variasi waktu.
