@@ -330,35 +330,39 @@ Since there is no linear relationship, nonlinear relationship test was performed
 
 ```{r}
 
+#| label: fig-6
+#| fig-cap: "Nonlinear relationship"
+#| echo: FALSE
+knitr::include_graphics(here("code","analysis-code","figures","nonlinear.png"))
+
 
 ```
 
+After performing nonlinear model, data transformation used based on the shave or distribution of the plots from nonlinear relationship plots ( @fig-6 ) above. ( @fig-7 ) shows the data distribution after data transformation. 
 
-
-*To get some further insight into your data, if reasonable you could
-compute simple statistics (e.g. simple models with 1 predictor) to look
-for associations between your outcome(s) and each individual predictor
-variable. Though note that unless you pre-specified the outcome and main
-exposure, any "p\<0.05 means statistical significance" interpretation is
-not valid.*
-
-@fig-result shows a scatterplot figure produced by one of the R scripts.
 
 ```{r}
-#| label: fig-result
-#| fig-cap: "Height and weight stratified by gender."
+
+#| label: fig-7
+#| fig-cap: "transformed data plots"
 #| echo: FALSE
-knitr::include_graphics(here("results","figures","height-weight-stratified.png"))
+knitr::include_graphics(here("code","analysis-code","figures","transformed.png"))
+
+
 ```
+
+
 
 ## Full analysis
 
-*Use one or several suitable statistical/machine learning methods to
-analyze your data and to produce meaningful figures, tables, etc. This
-might again be code that is best placed in one or several separate R
-scripts that need to be well documented. You want the code to produce
-figures and data ready for display as tables, and save those. Then you
-load them here.*
+For the final model, Generalized linear models (GLMs) and Generalized Addictive Models (GAMs). I need to discuss with Dr. Handal to get advice about this. 
+
+
+I actually have performed both GLMs and GAMs, but I still need to learn both models in depth. Specially for GAM, I am very new in the models. Initially I performed GLMs since the Transformed plots show linears line, but aftrer comparing the GLMs and GAMs model, GAMs perfoming better. 
+
+
+
+
 
 Example @tbl-resulttable2 shows a summary of a linear model fit.
 
@@ -406,3 +410,5 @@ file anything you like.
 {{< pagebreak >}}
 
 # References
+
+I will include reference for the sourse of data in the next step. 

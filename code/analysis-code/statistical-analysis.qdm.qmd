@@ -6,7 +6,6 @@ editor: visual
 
 ## 
 
-
 ```{r}
 #load needed packages. make sure they are installed.
 library(here) #for data loading/saving
@@ -32,6 +31,7 @@ library(reshape2)  # Load the package
 install.packages("scales")
 library(scales)
 
+library(splines)
 library(here)
 library(knitr)
 install.packages("kableExtra")
@@ -46,27 +46,35 @@ install.packages("gridExtra")  # If not installed
 library(gridExtra)
 ```
 
-
 Load the dataset
+
 ```{r}
 
 asia_africa_location <- here("data", "processed-data", "asia_africa.rds")
-readRDS(asia_africa_location)
+asia_africa <- readRDS(asia_africa_location)
 
 colnames(asia_africa)
 ```
 
-
-
-
-
-## Data Analysis 
+## Data Analysis
 
 ***Test the linearity***
 
-
-
 ```{r}
+
+# Define independent variables (exclude 'tbi' and categorical variables)
+independent_vars <- colnames(asia_africa)[!colnames(asia_africa) %in% c("tbi", "country", "region", "year")]
+
+# Create scatter plots for each independent variable against tbi
+plots <- lapply(independent_vars, function(var) {
+  ggplot(asia_africa, aes_string(x = var, y = "tbi")) +
+    geom_point() + 
+    ggtitle(paste("TBI vs", var)) + 
+    xlab(var) + 
+    ylab("TBI") + 
+    theme_minimal()
+})
+
 
 # Create a list of scatter plots for each independent variable against tbi
 plots <- lapply(independent_vars, function(var) {
@@ -88,6 +96,207 @@ plot(combined_plot)
 
 ```
 
+Interpretation: The predictors have no linear relationship with Tuberculosis Incidence. Therefore, we would like to perform nonlinear relationship to decide further action and analysis.
+
+***Check Nonlinear relationship***
+
+```{r}
+
+
+# Reshape the dataset to long format
+asia_africa_long <- asia_africa %>%
+  pivot_longer(cols = c(pro_cleanfuel, pro_basicwater, pro_safewater, 
+                        mean_exposure_pm2.5, total_greenhouses, pro_basicsanitation, 
+                        pro_safesanitation, gdp, hdi),
+               names_to = "Predictor", values_to = "Value")
+
+# Plot nonlinear relationships using LOESS smoothing
+nonlinear <- ggplot(asia_africa_long, aes(x = Value, y = tbi)) +
+  geom_point(alpha = 0.5) +  # Scatter points
+  geom_smooth(method = "loess", color = "red") +  # LOESS curve
+  facet_wrap(~ Predictor, scales = "free_x") +  # Separate plots for each predictor
+  theme_minimal() +
+  labs(title = "Nonlinear Relationship between TBI and Predictors",
+       x = "Predictor Value",
+       y = "TBI")
+
+
+nonrelationshiplot_location <- here( "code","analysis-code", "figures", "nonlinear.png") # to set up location for the pictures created 
+ggsave(filename = nonrelationshiplot_location, plot=nonlinear, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(nonlinear)
+```
+
+Data transformation
+
+```{r}
+
+library(dplyr)
+
+asia_africa <- asia_africa %>%
+  mutate(
+    log_tbi = log(tbi + 1),
+    log_gdp = log(gdp + 1),
+    log_total_greenhouses = log(total_greenhouses + 1),
+    log_pm2.5 = log(mean_exposure_pm2.5 + 1),
+    sqrt_basicwater = sqrt(pmax(pro_basicwater, 0)), 
+    sqrt_safewater = sqrt(pmax(pro_safewater, 0)),
+    poly_cleanfuel = as.numeric(poly(pro_cleanfuel, 2, raw = TRUE)[, 1]),
+    poly_basicsanitation = as.numeric(poly(pro_basicsanitation, 2, raw = TRUE)[, 1]),
+    poly_safesanitation = as.numeric(poly(pro_safesanitation, 2, raw = TRUE)[, 1])
+  )
+
+
+
+
+```
+
+```{r}
+asia_africa_transformed <- asia_africa %>%
+  dplyr::select(log_tbi, log_gdp, log_total_greenhouses, log_pm2.5, 
+                poly_cleanfuel, poly_basicsanitation, poly_safesanitation,
+                sqrt_basicwater, sqrt_safewater, hdi) %>%
+  pivot_longer(cols = -log_tbi, names_to = "Predictor", values_to = "Value")
+
+colnames(asia_africa)
+
+# Plot after transformation
+transformed <- ggplot(asia_africa_transformed, aes(x = Value, y = log_tbi)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", color = "red") +  # Use linear model for comparison
+  facet_wrap(~ Predictor, scales = "free_x") +
+  theme_minimal() +
+  labs(title = "Transformed Predictor Relationships with Log(TBI)",
+       x = "Transformed Predictor Value", y = "Log(TBI)")
+
+transformedplot_location <- here( "code","analysis-code", "figures", "transformed.png") # to set up location for the pictures created 
+ggsave(filename = transformedplot_location, plot=transformed, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(transformed)
+```
+
+After transforming variables. They look more linear. Now GLM will be performed
+
+***GLMs***
+
+```{r}
+glm_model <- glm(log_tbi ~ log_gdp + log_total_greenhouses + log_pm2.5 +
+                      poly_cleanfuel + poly_basicsanitation + poly_safesanitation +
+                      sqrt_basicwater + sqrt_safewater + hdi,
+                 data = asia_africa, family = gaussian)
+summary(glm_model)
+
+```
+
+\*\*\*General Addictive Model (GAM)
+
+```{r}
+library(mgcv)
+
+gam_model <- gam(log_tbi ~ s(log_gdp) + s(log_total_greenhouses) + s(log_pm2.5) +
+                      s(poly_cleanfuel) + s(poly_basicsanitation) + s(poly_safesanitation) +
+                      s(sqrt_basicwater) + s(sqrt_safewater) + s(hdi),
+                 data = asia_africa, family = gaussian)
+summary(gam_model)
+
+```
+
+Interpretation:
+
+Generalized Additive Model (GAM) explains 94.5% of the deviance in log-transformed tuberculosis incidence (Log(TBI)), which suggests an excellent fit. Below is a step-by-step breakdown of the interpretation.
+
+Overall Model Performance Adjusted R² (R-sq.(adj) = 0.917) - This means 91.7% of the variability in Log(TBI) is explained by the predictors. - A very strong model since it explains most of the variance.
+
+Deviance Explained = 94.5%
+
+-   Similar to R² but for GAM, indicating excellent model fit.
+
+Generalized Cross-Validation (GCV) = 0.0685
+
+-   Lower GCV indicates better predictive performance.
+-   This suggests that the model generalizes well to new data.
+
+![](images/clipboard-4125844072.png)
+
+Now, I want to remove insignificant variables
+
+```{r}
+gam_optimized <- gam(log_tbi ~ s(log_gdp) + s(log_total_greenhouses) + s(log_pm2.5) + 
+                         s(poly_cleanfuel) + s(sqrt_basicwater) + 
+                         s(sqrt_safewater) + s(hdi),
+                     data = asia_africa, family = gaussian)
+summary(gam_optimized)
+
+```
+
+Comparing GAM models
+
+```{r}
+AIC(gam_model, gam_optimized)
+BIC(gam_model, gam_optimized)
+
+
+```
+
+Visualize significant predictors
+
+```{r}
+plot(gam_model, pages = 1, shade = TRUE)
+
+```
+
+```{r}
+ggplot(data = asia_africa, aes(x = exp(log_tbi), y = exp(predict(gam_model, type = "response")))) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Actual vs. Predicted TBI",
+       x = "Actual TBI", y = "Predicted TBI")
+
+```
+
+***Comparing the model***
+
+```{r}
+AIC(glm_model, gam_model)
+BIC(glm_model, gam_model)
+```
+
+After comapring the models, based on AIC and BIC, GAM model is more appropriate
+
+Check Paryial effects of Predictors
+
+```{r}
+plot(gam_model, pages = 1, shade = TRUE)
+
+```
+
+```{r}
+predictions <- predict(gam_model, newdata = asia_africa, type = "response")
+head(predictions)
+
+```
+
+Compare actual vs predicted values
+
+```{r}
+ggplot(data = asia_africa, aes(x = log_tbi, y = predictions)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Actual vs. Predicted Log(TBI)", x = "Actual Log(TBI)", y = "Predicted Log(TBI)")
+
+
+asia_africa$predicted_tbi <- exp(predict(gam_model, newdata = asia_africa, type = "response"))
+
+ggplot(asia_africa, aes(x = tbi, y = predicted_tbi)) +
+  geom_point(alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  labs(title = "Actual vs. Predicted TBI",
+       x = "Actual TBI", y = "Predicted TBI")
+
+```
+
+Interpretation:
+
+The points are generally close to the line, indicating that the model is accurate.
+
 ```{r}
 
 # Step 1: Ensure all numeric variables are correctly formatted
@@ -101,10 +310,30 @@ asia_africa <- asia_africa %>%
   mutate(poly_greenhouses = as.numeric(poly(total_greenhouses, degree = 2, raw = TRUE)[,1]))
 
 
-# Step 2: Reshape the dataset for visualization
-asia_africa_long <- asia_africa %>%
-  select(-country, -region, -year) %>%  # Exclude categorical variables
+# Ensure it's a tibble
+asia_africa <- as_tibble(asia_africa)
+
+# Select variables (excluding categorical ones)
+asia_africa_selected <- asia_africa %>%
+  select(-all_of(c("country", "region", "year")))
+
+# Reshape the dataset
+asia_africa_long <- asia_africa_selected %>%
   pivot_longer(cols = -tbi, names_to = "predictor", values_to = "value")
+
+# Print first few rows
+print(head(asia_africa_long))
+
+
+
+
+# Step 2: Reshape the dataset for visualization
+asia_africa <- as_tibble(asia_africa)
+asia_africa_long <- asia_africa %>%
+  select(-c(country, region, year)) %>%  # Use `-c()` for multiple column exclusion
+  pivot_longer(cols = -tbi, names_to = "predictor", values_to = "value")
+
+
 
 # Step 3: Check if pivot_longer() worked correctly
 print(head(asia_africa_long))
@@ -126,9 +355,6 @@ ggsave(filename = nonlinear_location, plot=plot_nonlinear, width = 12, height = 
 plot(combined_plot)
 ```
 
-
-
-
 ```{r}
 glm_model <- glm(tbi ~ gdp + hdi + pro_basicsanitation + pro_basicwater + 
                  pro_safesanitation + pro_safewater + pro_cleanfuel + 
@@ -139,15 +365,16 @@ summary(glm_model)
 plot(glm_model)
 
 ```
-Q-Q plot of residuals from the Poisson GLM suggests that the model is not fitting the data well. The deviation from the straight line, especially at higher quantiles (outliers labeled 78, 79, 80), indicates overdispersion—where the variance of tbi is larger than the mean, violating the Poisson assumption.
 
+Q-Q plot of residuals from the Poisson GLM suggests that the model is not fitting the data well. The deviation from the straight line, especially at higher quantiles (outliers labeled 78, 79, 80), indicates overdispersion—where the variance of tbi is larger than the mean, violating the Poisson assumption.
 
 ```{r}
 dispersion_test <- sum(residuals(glm_model, type="pearson")^2) / glm_model$df.residual
 dispersion_test  # If > 1.5, overdispersion exists
 
 ```
-since the result is very high, which should be close to 1. We need a model that can hanlde overdispersion 
+
+since the result is very high, which should be close to 1. We need a model that can hanlde overdispersion
 
 ```{r}
 library(MASS)
@@ -158,26 +385,20 @@ summary(glm_nb)
 
 ```
 
-Interpretation: 
+Interpretation:
 
-1. Overdispersion Check
-The estimated Theta (4.246, SE = 0.430) suggests that overdispersion is present but is well-accounted for by the Negative Binomial model.
-The Residual Deviance (196.14) is much lower than the Null Deviance (409.01), meaning the model fits the data better than a null model.
-Dispersion parameter = 1, confirming that the Negative Binomial model is appropriate.
-
+1.  Overdispersion Check The estimated Theta (4.246, SE = 0.430) suggests that overdispersion is present but is well-accounted for by the Negative Binomial model. The Residual Deviance (196.14) is much lower than the Null Deviance (409.01), meaning the model fits the data better than a null model. Dispersion parameter = 1, confirming that the Negative Binomial model is appropriate.
 
 The predictors that significantly impact TBI (tbi) are:
 
-- hdi (-7.642, p < 2e-16) Higher HDI is associated with lower tbi cases.
-- pro_basicsanitation (0.00577, p = 0.0334)  Increased access to basic sanitation is linked to a slight increase in tbi.
-- pro_basicwater (0.0318, p = 9.42e-16) → Higher access to basic water is positively associated with tbi.
-- pro_safewater (-0.00856, p = 0.0414) → Increased safe water access reduces tbi.
-- pro_cleanfuel (-0.005999, p = 0.0137) → More use of clean fuels is linked to lower tbi.
-- mean_exposure_pm2.5 (-0.02698, p < 2e-16) → Higher PM2.5 exposure reduces tbi (unexpected; may need further investigation).
+-   hdi (-7.642, p \< 2e-16) Higher HDI is associated with lower tbi cases.
+-   pro_basicsanitation (0.00577, p = 0.0334) Increased access to basic sanitation is linked to a slight increase in tbi.
+-   pro_basicwater (0.0318, p = 9.42e-16) → Higher access to basic water is positively associated with tbi.
+-   pro_safewater (-0.00856, p = 0.0414) → Increased safe water access reduces tbi.
+-   pro_cleanfuel (-0.005999, p = 0.0137) → More use of clean fuels is linked to lower tbi.
+-   mean_exposure_pm2.5 (-0.02698, p \< 2e-16) → Higher PM2.5 exposure reduces tbi (unexpected; may need further investigation).
 
-
-
-Data Transfomation 
+Data Transfomation
 
 ```{r}
 asia_africa <- asia_africa %>%
@@ -190,7 +411,6 @@ asia_africa <- asia_africa %>%
          poly_greenhouses = poly(total_greenhouses, 2))  # 2nd-degree polynomial
 
 ```
-
 
 ```{r}
 library(mgcv)
@@ -205,7 +425,6 @@ gamplot<- plot(gam_model, pages = 1)
 
 
 ```
-
 
 ```{r}
 # Calculate correlations
@@ -222,8 +441,6 @@ cor(asia_africa$tbi, asia_africa$mean_exposure_pm2.5)
 
 
 ```
-
-
 
 Spearman's Rank Correlation (Recommended) Spearman correlation is a non-parametric method that measures monotonic relationships (whether the variables move together, not necessarily linearly).
 
@@ -251,8 +468,6 @@ ggsave(filename = matrix_location, plot=plot5, width = 12, height = 12, units = 
 plot(plot5)
 ```
 
-
-
 ```{r}
 
 #| label: fig-Spearman's Correlation Matrix 
@@ -260,7 +475,6 @@ plot(plot5)
 #| echo: FALSE
 knitr::include_graphics(here("code", "eda-code", "figures", "correlation_matrix.png"))
 ```
-
 
 I will performed longitudinal data analysis
 
