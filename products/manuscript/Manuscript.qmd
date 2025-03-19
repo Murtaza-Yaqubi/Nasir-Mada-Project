@@ -1,5 +1,5 @@
 ---
-title: "The effects of multi environmental exposures on Tuberculosis Incidence in South East Asian and African countris"
+title: "The effects of Water and Sanitation on Tuberculosis Incidence in South East Asian and African countris"
 author: ""
 format:
   docx:
@@ -59,76 +59,60 @@ author's own and don't reflect their employer.
 Tuberculosis is old infectious disease which still exists and become
 major public health in the world, particularly in developing countries.
 Tuberculosis is linked to environmental factors. This study will analyze
-the effects of multi environmental factors on tuberculosis incidence in
-Asia and Africa regions, where the majority of tuberculosis coming from
-these regions. The environmental factors and country economic and human
-development index as covariates.
+the effects of multi environmental factors, specially water and
+sanitation on tuberculosis incidence in Asia and Africa regions, where
+the majority of tuberculosis coming from these regions. The water and
+sanitation will be the main exposures and Human Development Index as a
+control variable.
 
 ## Description of data and data source
 
 The study will use multi sources of data including World Bank, World
-Health Organization (WHO), United Nation for Children Fund (Unicef),
-UN-HABITAT, Emissions Database for Global Atmospheric Research (EDGAR),
-and Institute for Health Metrics and Evaluation (IHME). Different
-dataset contains different variable, however all dataset have same year,
-country name and country codes that can be used to combine the dataset.
-The data also contain information of countries globally from 2000 to
-2020. The variables will include proportion of urban population living
-in slum areas, percentage of population using safely managed sanitation
-services, percentage of population using at least basic drinking water
-service, fuel for cooking, Population-weighted exposure to ambient PM2.5
-pollution, total green houses, and will include GDP/ country economic
-status, human development index, and Universal Health Coverage as
-covariates.
-
-Note: I have downloaded the dataset, but I have not conducted any
-cleaning or exploration on the dataset. List of data sources and website
-is provided in an excel fine in my data folder. I will include them in
-my reference for the next steps.
+Health Organization (WHO), United Nation for Children Fund (Unicef).
+Different dataset contains different variable, however all dataset have
+same year, country name and country codes that can be used to combine
+the dataset. The data also contain information of countries globally
+from 2000 to 2020. The variables will include percentage of population
+using safely managed sanitation services, percentage of population using
+at least basic drinking water service, percentage of population using
+well-managed water, percentage of population using basic sanitation,
+percentage of population using well-managed sanitation, and human
+development index.
 
 ## Questions/Hypotheses to be addressed
 
 *State the research questions you plan to answer with this analysis.*
 
-The main aim of this study is to look at the impacts of environmental
-factors on tuberculosis incidence.
+The main aim of this study is to look at the effect of Water and
+Sanitation on on tuberculosis incidence.
 
-RQ: What environmental factors associated with tuberculosis incidence?
+RQ: Does access to water and sanitation effect Tuberculosis incidence in
+Asian and African Regions?
 
-H0: there is no relationship between proportion of urban population
-living in slum areas and tuberculosis.
+Null Hypotheisis
 
-H0: thee is no relationship between safely managed sanitation and
+H0: thee is no effect of access to basic sanitation on tuberculosis
+incidence
+
+H0: thee is no effect of access to safely managed sanitation and on
 tuberculosis incidence
 
-H0: there is no relationship between drinking water and tuberculosis
-incidence
-
-H0: there is no relationship between fuel for cooking and tuberculosis
-incidence
-
-H0: there is no relationship between PM 2.5 exposure and tuberculosis
-incidence
-
-H0: there is no association between total green gas houses and
+H0: there is no effect of access to access basic drinking water and
 tuberculosis incidence
 
-Ha: there is a relationship between proportion of urban population
-living in slum areas and tuberculosis.
-
-Ha: there is a relationship between safely managed sanitation and
+H0: there is no effect of access to safely managed drinking water on
 tuberculosis incidence
 
-Ha: there is a relationship between drinking water and tuberculosis
-incidence
+Alternative Hypothesis Ha: thee is an effect of access to basic
+sanitation on tuberculosis incidence
 
-Ha: there is a relationship between fuel for cooking and tuberculosis
-incidence
+Ha: thee is an effect of access to safely managed sanitation and on
+tuberculosis incidence
 
-Ha: there is a relationship between PM 2.5 exposure and tuberculosis
-incidence
+Ha: there is an effect of access to access basic drinking water and
+tuberculosis incidence
 
-Ha: there is a association between total green gas houses and
+Ha: there is an effect of access to safely managed drinking water on
 tuberculosis incidence
 
 To cite other work (important everywhere, but likely happens first in
@@ -143,18 +127,18 @@ Examples of reproducible research projects can for instance be found in
 
 # Methods
 
-The datasets were loded one by one, then drop all unused variable before
-comined those datasets using reduce() function. Countries, which have at
-least one missing years from 2000 to 2020, were dropped from the study.
-To make sure that the data is clean and ready to analyse, all missing
-values were dropped. This study focuses on South East Asia and Africa
-Regions, where the major proportion of tuberculosis cases came.
+The datasets were loaded one by one, then drop all unused variable
+before combined those datasets using reduce() function. Countries, which
+have at least one missing years from 2000 to 2020, were dropped from the
+study. To make sure that the data is clean and ready to analyse, all
+missing values were dropped. This study focuses on South East Asia and
+Africa Regions, where the major proportion of tuberculosis cases came.
 Therefore, a newsubset for South East Asia and African countries was
 created.
 
-After data cleaning, multiple exploratory data analysis was forformed
-such us summary and vizualising the data. A bloxplot was created to show
-Tuberculosis Incidence in each country during the time frame. Spagheti
+After data cleaning, multiple exploratory data analysis was performed
+such us summary and visualizing the data. A bloxplot was created to show
+Tuberculosis Incidence in each country during the time frame. Spaghetti
 plot was created to visualize the trend of tuberculosis incidence and
 other variables over the time. Lastly, line charts showing the trend of
 all variables in each country.
@@ -162,13 +146,12 @@ all variables in each country.
 The exploratory data analysis showed that the data were not normally
 distributed and there was no linear relationship between tuberculosis
 incidence and other predictors. Therefore, Spearman's correlation matrix
-was perfomed to see the correlations. To have better understanding, a
-heatmap matrix plot was created to show the correlation.
+was performed to see the correlations. To have better understanding, a
+heat map matrix plot was created to show the correlation.
 
-The main statistical analysis in thie study is longitudinal data
-analysis (eithre fixed effect or mixed effect method). To see which one
-is better, Hausman Test was performed to determine which model is
-better.
+The main statistical analysis in the study is longitudinal data analysis
+(either fixed effect or mixed effect method). To see which one is
+better, Hausman Test was performed to determine which model is better.
 
 NOTE: I still need to discuss and need more advice about the data
 analysis from Dr. Handel
@@ -188,19 +171,19 @@ Biorender. We store those figures in the `assets` folder.
 knitr::include_graphics(here("assets","antigen-recognition.png"))
 ```
 
-## Data aquisition
+## Data acquisition
 
-Most of the data is downloaded from Worlbank Dataset. However, those
-data are originally from many different courses/ organizations, such as
-World Bank, WHA, UNICEF, UN-HABITAT, EDGAR, and IHME.
+The data was downloaded from Worlbank Dataset. However, those data are
+originally from many different courses/ organizations, such as World
+Bank, WHA, UNICEF, UN-HABITAT, EDGAR, and IHME.
 
 ## Data import and cleaning
 
-Data Import and data cleaning process have been explained in the methode
+Data Import and data cleaning process have been explained in the method
 part. To see the code for data import and data cleaning , please visit
 working directory ("code", "processing-code", "processingfile.qdm").
 Processed and clean data are saved at a folder ("data",
-"processed-data"). There are many .rds files in the folder icnlduing
+"processed-data"). There are many .rds files in the folder indulging
 file for each variables, and file after combined all variables.
 
 Dataset are either in excel or CSV files. Several steps from loading to
@@ -226,6 +209,26 @@ data analysis:
 
 *Explain anything related to your statistical analyses.*
 
+The study applied Generalized Additive Mixed Model (GAMM). The model can
+capture mixed effect of countries on Tuberculosis Incidence with non
+linear relationship. The data analysis started by looking at the
+relationship between Tuberculosis Incidence and Predictors. Non linear
+relationship was discovered.Next step is to perform non-linear
+relationship to looking at form of relationship. Human Development Index
+(HDI), Access to basic water and well-managed water show curvature
+relationship, while access to basic sanitation and well-managed
+sanitation show polynomial. Data transformation was performed based.
+After data transformation, we fit model1, which only includes water and
+sanitation variables (as main variables in this study), model2 includes
+all predictors (HDI, access to water and sanitation), model3 only
+includes significant variables in the previous model. Model 1, 2 and 3
+use Generalized Linear Mixed Model (GLMM). We also performed VIF test to
+look at multicollinearity. Model 4 uses Generalized Additive Mixed
+Models. Moreover, BIC and AIC tests were performed to look at the best
+model. BIC and AIC tests found that Model 4 (GAMM) performs better with
+the smallest BIC and AIC. To be able to interpret GAMM better, we
+visualize the result into plots.
+
 {{< pagebreak >}}
 
 # Results
@@ -236,28 +239,24 @@ There are some exploratory data analysis conducted and resulted table,
 and charts. Table 1 shows the summary statistics including min, mean,
 max, and standard deviation of all variables.
 
-NOTE: I still have issue in saving the stiled tables. I am still working
-on it. I will show it next step.
+NOTE: I still have issue in saving the tables. I am still working on it.
+I will show it next step.
 
 ```{r}
 #| label: tbl-summarytable
 #| tbl-cap: "Data summary table."
 #| echo: FALSE
-resulttable=readRDS("../../results/tables/summarytable.rds")
+resulttable=readRDS (here("code", "eda-code", "tables", "summary_table.rds"))
 knitr::kable(resulttable)
 ```
 
 The line graph ( @fig-1 ) shows the trend of all variables over the
 period in each country. It can be seen that the majority of country
 showed the decreases trend in tuberculosis incidence over 21 years
-period, except Lesotho showing a sharp increase until the middle of the
-period before dramatic decrease until the end of the period. All
-countries showed the increase trend in percentage of population using
-using basic and safe drinking water, basic and safe sanitation, and
-clean fuel and technology for cooking, except Zimbabuwe showing the
-decrease in percentage of population using basic drinking water and safe
-sanitation, and Senegal showing the decrease of population using clean
-fuel and technology for cooking.
+period. All countries showed the increase trend in percentage of
+population using using basic and safe drinking water, basic and safe
+sanitation, except Zimbabuwe showing the decrease in percentage of
+population using basic drinking water and safe sanitation.
 
 ```{r}
 
@@ -271,8 +270,7 @@ knitr::include_graphics(here("code","eda-code","figures","line-graph-tbivsfactor
 ( @fig-2 ) shows spaghetti plots in each variables. We can see the
 trends of each country in every variables. It can be seen that generally
 most of the countries show the increase trends in water and sanitation,
-clean fuel use, human development index, total greenhouses, but
-fluctuated trends in mean of PM2.5 expousures.
+and human development index
 
 ```{r}
 
@@ -290,18 +288,18 @@ followed by Myanmar and Tanzania.
 ```{r}
 
 #| label: fig-3
-#| fig-cap: "Spaghetti plots in each variables"
+#| fig-cap: "Boxplot plots for each Country"
 #| echo: FALSE
 knitr::include_graphics(here("code","eda-code","figures","boxplot.png"))
 
 ```
 
-
-
 ## Basic statistical analysis
 
-As first step of statistical analysis. Using scatterplot to show the linearity between tuberculosis incidence and predictors. ( @fig-4 ) shows the scatterplots. The scatterplots do not show linear relationship between tuberculosis Incidence and predictors. 
-
+As first step of statistical analysis. Using scatter plot to show the
+linearity between tuberculosis incidence and predictors. ( @fig-4 )
+shows the scatter plots. The scatter plots do not show linear
+relationship between tuberculosis Incidence and predictors.
 
 ```{r}
 
@@ -311,9 +309,12 @@ As first step of statistical analysis. Using scatterplot to show the linearity b
 knitr::include_graphics(here("code","eda-code","figures","scatterplot.png"))
 
 ```
-Before going further, we need to look at correlation between tuberculosis Incidence and all predictors. 
 
-Since they show nonlinearity, spearman's correlation performed and hsowing in the following correlation matrix. See ( @fig-5 )
+Before going further, we need to look at correlation between
+tuberculosis Incidence and all predictors.
+
+Since they show non linearity, spearman's correlation performed and
+showing in the following correlation matrix. See ( @fig-5 )
 
 ```{r}
 
@@ -325,8 +326,7 @@ knitr::include_graphics(here("code","eda-code","figures","correlation_matrix.png
 
 ```
 
-
-Since there is no linear relationship, nonlinear relationship test was performed. 
+Now, we want to assess non linear relationship.
 
 ```{r}
 
@@ -338,8 +338,10 @@ knitr::include_graphics(here("code","analysis-code","figures","nonlinear.png"))
 
 ```
 
-After performing nonlinear model, data transformation used based on the shave or distribution of the plots from nonlinear relationship plots ( @fig-6 ) above. ( @fig-7 ) shows the data distribution after data transformation. 
-
+After performing nonlinear model, data transformation used based on the
+shave or distribution of the plots from nonlinear relationship plots (
+@fig-6 ) above. ( @fig-7 ) shows the data distribution after data
+transformation.
 
 ```{r}
 
@@ -351,27 +353,84 @@ knitr::include_graphics(here("code","analysis-code","figures","transformed.png")
 
 ```
 
-
-
 ## Full analysis
 
-For the final model, Generalized linear models (GLMs) and Generalized Addictive Models (GAMs). I need to discuss with Dr. Handal to get advice about this. 
-
-
-I actually have performed both GLMs and GAMs, but I still need to learn both models in depth. Specially for GAM, I am very new in the models. Initially I performed GLMs since the Transformed plots show linears line, but aftrer comparing the GLMs and GAMs model, GAMs perfoming better. 
-
-
-
-
-
-Example @tbl-resulttable2 shows a summary of a linear model fit.
+There are four models build; fitting model with only water and
+sanitation variables, then fitting models including co-variate (HDI).
+The third model is to fit only significant variables. The first three
+models use Generalized Linear Mixed Models (GLMM), while the last model
+used Generalized Additive Mixed Models (GAMM). Those models were
+compared using AIC and BIC criteria to select the best/ the final
+models.
 
 ```{r}
-#| label: tbl-resulttable2
-#| tbl-cap: "Linear model fit table."
+#| label: tbl-summarytable
+#| tbl-cap: "Model Criteria"
 #| echo: FALSE
-resulttable2 = readRDS(here("results","tables","resulttable2.rds"))
+resulttable2=readRDS (here("code", "analysis-code", "tables", "criteria_output.rds"))
 knitr::kable(resulttable2)
+```
+
+Based on BIC and AIC criteria, the best model fit the data is
+Generalized Additive Mixed Models.
+
+\$ \log(\text{TBI}) \sim s(\text{hdi}) + s(\text{pro\_basicwater}) +
+s(\text{pro\_safewater}) + s(\text{pro\_basicsanitation}) +
+s(\text{country}, \text{bs}="re") \$
+
+```{r}
+#| label: tbl-summarytable
+#| tbl-cap: "Generalized Additive Mixed Models"
+#| echo: FALSE
+resulttable3=readRDS (here("code", "analysis-code", "tables", "summary_Gamm.rds"))
+knitr::kable(resulttable3)
+```
+
+This study employed a Generalized Additive Model (GAM) with a Gaussian
+family and identity link function to examine the association between
+tuberculosis incidence and key environmental and socioeconomic factors
+across multiple countries. The model incorporated smooth functions for
+continuous predictors and a random effect for country to account for
+within-country variability. The results indicate that HDI and basic
+sanitation are significant determinants of tuberculosis incidence, while
+access to basic and safe water did not show strong associations.
+
+The smooth function for Human Development Index (HDI) was highly
+significant (p \< 2e-16), with an estimated effective degrees of freedom
+(EDF) = 4.283, confirming a non-linear relationship between HDI and
+tuberculosis incidence. The effect was strongest at lower HDI values,
+suggesting that improvements in socioeconomic conditions may have the
+greatest impact in reducing tuberculosis burden in low-HDI countries.
+
+Among the water and sanitation variables, basic water access was not
+statistically significant (p = 0.73379), indicating no strong evidence
+of an association between water coverage and tuberculosis incidence.
+Similarly, safe water access was not significant at α = 0.05 (p =
+0.05605), suggesting only a weak relationship. However, basic sanitation
+access was statistically significant (p = 0.00542, EDF = 3.845),
+suggesting that higher access to sanitation is associated with a
+reduction in tuberculosis incidence. This highlights the importance of
+improving sanitation infrastructure as a potential intervention for
+tuberculosis control.
+
+The random effect of country (s(country)) was highly significant (p \<
+2e-16, EDF = 16.768), indicating substantial between-country variation
+in tuberculosis incidence. This justifies the inclusion of random
+effects to account for country-level heterogeneity and underscores the
+need for context-specific policy interventions tailored to national
+conditions.
+
+The model fit was strong, with an adjusted R² of 0.974, indicating that
+97.4% of the variance in tuberculosis incidence was explained by the
+model. The scale estimate was 0.014598, suggesting a low residual
+variance, which reflects a well-fitting model.
+
+```{r}
+#| label: fig-7
+#| fig-cap: "Generalized Additive Mixed Models"
+#| echo: FALSE
+knitr::include_graphics(here("code","analysis-code","figures","gam_diagnostics.jpg"))
+
 ```
 
 {{< pagebreak >}}
@@ -390,6 +449,17 @@ analysis.*
 ## Conclusions
 
 *What are the main take-home messages?*
+
+These findings underscore the significant role of socioeconomic
+conditions and sanitation infrastructure in tuberculosis control. While
+access to basic and safe water was not a significant predictor,
+improvements in sanitation and overall socioeconomic development (HDI)
+were strongly associated with lower tuberculosis incidence. Given the
+significant country-level differences, tuberculosis prevention
+strategies should be tailored to national contexts, emphasizing
+improvements in living standards and sanitation access. These results
+provide valuable insights for policymakers aiming to design targeted
+public health interventions in high-burden settings.
 
 *Include citations in your Rmd file using bibtex, the list of references
 will automatically be placed at the end*
@@ -411,4 +481,4 @@ file anything you like.
 
 # References
 
-I will include reference for the sourse of data in the next step. 
+I will include reference for the sourse of data in the next step.

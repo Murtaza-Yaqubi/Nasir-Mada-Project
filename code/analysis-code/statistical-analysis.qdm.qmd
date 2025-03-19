@@ -44,6 +44,12 @@ library(patchwork)
 
 install.packages("gridExtra")  # If not installed
 library(gridExtra)
+
+install.packages("lmerTest")
+library(lmerTest)
+install.packages("stargazer")
+library(stargazer)
+
 ```
 
 Load the dataset
@@ -53,6 +59,11 @@ Load the dataset
 asia_africa_location <- here("data", "processed-data", "asia_africa.rds")
 asia_africa <- readRDS(asia_africa_location)
 
+# In the study, I will focus on Water and Sanitation and remove Lesotho as it considered as outlier
+asia_africa <- asia_africa%>%
+  filter(country != "Lesotho") %>% #Drop Lesotho from the observation
+  select("tbi", "year", "pro_basicwater", "pro_safewater", "pro_basicsanitation", "pro_safesanitation", "hdi", "country", "region")
+
 colnames(asia_africa)
 ```
 
@@ -60,41 +71,138 @@ colnames(asia_africa)
 
 ***Test the linearity***
 
+
 ```{r}
-
-# Define independent variables (exclude 'tbi' and categorical variables)
-independent_vars <- colnames(asia_africa)[!colnames(asia_africa) %in% c("tbi", "country", "region", "year")]
-
-# Create scatter plots for each independent variable against tbi
-plots <- lapply(independent_vars, function(var) {
-  ggplot(asia_africa, aes_string(x = var, y = "tbi")) +
-    geom_point() + 
-    ggtitle(paste("TBI vs", var)) + 
-    xlab(var) + 
-    ylab("TBI") + 
-    theme_minimal()
-})
+# Adding Fixed-Effect to Make Conditional Models ---
+ggplot(asia_africa, aes(x = year, y = tbi)) + 
+  geom_line(aes(group=country), col="grey") + 
+  stat_smooth(method="loess", col="black", lwd=1.5, se=FALSE)+
+  scale_x_continuous(name = "years") + 
+  scale_y_continuous(name = "Tuberculosis Incidence") +
+  theme_bw() + 
+  theme(axis.text=element_text(size=14, colour="black"), 
+        axis.title=element_text(size=14,face="bold")) +
+  theme(strip.text.x = element_text(size = 14))+ theme(legend.position="none") 
+```
 
 
-# Create a list of scatter plots for each independent variable against tbi
-plots <- lapply(independent_vars, function(var) {
-  ggplot(asia_africa, aes_string(x = var, y = "tbi")) +
-    geom_point() + 
-    ggtitle(paste("tbi vs", var)) + 
-    xlab(var) + 
-    ylab("TBI") + 
-    theme_minimal()
-})
 
-# Combine all plots into a single frame
-combined_plot <- wrap_plots(plots, ncol = 3)  # Adjust ncol to the number of columns you want
+```{r}
+# Convert dataset to long format for faceting
+asia_africa_long <- asia_africa %>%
+  pivot_longer(cols = c(pro_basicwater, pro_safewater,
+                        pro_basicsanitation, pro_safesanitation, hdi),
+               names_to = "variable", values_to = "value")
+
+# Create scatter plot faceted by independent variable
+scatter_faceted <- ggplot(asia_africa_long, aes(x = value, y = tbi, color = country)) + 
+  geom_point(alpha = 0.6) +  # Scatter points, colored by country
+  stat_smooth(method = "loess", col = "black", lwd = 1.2, se = FALSE) +  # LOESS (non-linear) in black
+  facet_wrap(~ variable, scales = "free_x") +  # Facet by variable
+  labs(x = "Independent Variable Value", y = "Tuberculosis Incidence (TBI)") +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 12, colour = "black"), 
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 14, face = "bold"), 
+        legend.position = "none")  # Hides the legend
 
 
-combineplot_location <- here( "code","analysis-code", "figures", "scatterplot.png") # to set up location for the pictures created 
-ggsave(filename = combineplot_location, plot=combined_plot, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
-plot(combined_plot)
+nonrelationshiplot_location <- here( "code","analysis-code", "figures", "nonlinear.png") # to set up location for the pictures created 
+ggsave(filename = nonrelationshiplot_location, plot=scatter_faceted, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+# Show plot
+print(scatter_faceted)
 
 ```
+
+Non-linearity test 
+```{r}
+# Install package if not already installed
+install.packages("lmtest")
+library(lmtest)
+
+# Fit a linear model
+lm_model <- lm(tbi ~ pro_cleanfuel + pro_basicwater + pro_safewater + 
+               mean_exposure_pm2.5 + total_greenhouses + 
+               pro_basicsanitation + pro_safesanitation + gdp + hdi, 
+               data = asia_africa)
+
+# Run the RESET test for linearity
+resettest(lm_model, power = 2:3)
+
+```
+
+
+
+
+
+```{r}
+
+
+# Fit a linear model (LM)
+lm_model <- lm(tbi ~ pro_cleanfuel + pro_basicwater + pro_safewater + 
+               mean_exposure_pm2.5 + total_greenhouses + 
+               pro_basicsanitation + pro_safesanitation + gdp + hdi, 
+               data = asia_africa)
+
+# Fit a non-linear model (GAM)
+gam_model <- gam(tbi ~ s(pro_cleanfuel) + s(pro_basicwater) + s(pro_safewater) + 
+                  s(mean_exposure_pm2.5) + s(total_greenhouses) + 
+                  s(pro_basicsanitation) + s(pro_safesanitation) + 
+                  s(gdp) + s(hdi), 
+                 data = asia_africa, method = "REML")
+
+# Compare AIC values
+AIC(lm_model, gam_model)
+
+
+
+
+# Plot residuals vs. fitted values for the linear model
+plot(lm_model$fitted.values, resid(lm_model), 
+     xlab = "Fitted Values", ylab = "Residuals", 
+     main = "Residuals vs. Fitted Plot")
+abline(h = 0, col = "red")  # Horizontal line at 0
+
+```
+
+```{r}
+gamm_model <-gam(tbi ~ s(year) + s(pro_cleanfuel) + s(hdi) + ti(pro_cleanfuel, hdi) + s(country, bs="re"), 
+    family = nb(), method = "REML", data = asia_africa)
+
+```
+
+
+```{r}
+library(car)
+vif(gamm_model)
+```
+
+
+```{r}
+cor_matrix <- cor(asia_africa[, c("year", "pro_cleanfuel", "hdi", "gdp")], use="pairwise.complete.obs")
+print(cor_matrix)
+
+```
+
+
+### Longitudinal analysis with Mixed-effect models
+```{r}
+# Pastikan tidak ada NA dalam variabel yang dianalisis
+asia_africa_clean <- asia_africa %>%
+  drop_na(tbi, pro_cleanfuel, mean_exposure_pm2.5, pro_basicwater, pro_safewater, pro_basicsanitation, pro_safesanitation, total_greenhouses, gdp, hdi, year, country)
+
+
+
+# Model Mixed-Effects: TBI is predicted by predictors with random effect per each country 
+model_lmm <- lmer(tbi ~ pro_cleanfuel+ mean_exposure_pm2.5 + pro_basicwater + pro_safewater + pro_basicsanitation + pro_safesanitation + total_greenhouses + gdp + hdi + year + (1 | country),  # Random intercept dressed variation in each country
+                   data = asia_africa_clean, REML = FALSE)
+
+# Ringkasan hasil model
+summary(model_lmm)
+```
+
+
+
 
 Interpretation: The predictors have no linear relationship with Tuberculosis Incidence. Therefore, we would like to perform nonlinear relationship to decide further action and analysis.
 
@@ -105,9 +213,8 @@ Interpretation: The predictors have no linear relationship with Tuberculosis Inc
 
 # Reshape the dataset to long format
 asia_africa_long <- asia_africa %>%
-  pivot_longer(cols = c(pro_cleanfuel, pro_basicwater, pro_safewater, 
-                        mean_exposure_pm2.5, total_greenhouses, pro_basicsanitation, 
-                        pro_safesanitation, gdp, hdi),
+  pivot_longer(cols = c( pro_basicwater, pro_safewater, pro_basicsanitation, 
+                        pro_safesanitation,hdi),
                names_to = "Predictor", values_to = "Value")
 
 # Plot nonlinear relationships using LOESS smoothing
@@ -126,7 +233,11 @@ ggsave(filename = nonrelationshiplot_location, plot=nonlinear, width = 12, heigh
 plot(nonlinear)
 ```
 
-Data transformation
+It can be seen that some variables show u-shaped (quadratic), however some variables looks more complex. In this case, we are going to try to fit two models, first model will fit Mixed effects model with Polynomial Terms, and addictive mixed model (GAMM). 
+
+I will perform two steps here: 
+1. Data transformation, then looking at possible model, 
+2. Directly performing Mixed effects model with polynomial terms, and Performing GAMM 
 
 ```{r}
 
@@ -135,12 +246,8 @@ library(dplyr)
 asia_africa <- asia_africa %>%
   mutate(
     log_tbi = log(tbi + 1),
-    log_gdp = log(gdp + 1),
-    log_total_greenhouses = log(total_greenhouses + 1),
-    log_pm2.5 = log(mean_exposure_pm2.5 + 1),
     sqrt_basicwater = sqrt(pmax(pro_basicwater, 0)), 
     sqrt_safewater = sqrt(pmax(pro_safewater, 0)),
-    poly_cleanfuel = as.numeric(poly(pro_cleanfuel, 2, raw = TRUE)[, 1]),
     poly_basicsanitation = as.numeric(poly(pro_basicsanitation, 2, raw = TRUE)[, 1]),
     poly_safesanitation = as.numeric(poly(pro_safesanitation, 2, raw = TRUE)[, 1])
   )
@@ -152,8 +259,7 @@ asia_africa <- asia_africa %>%
 
 ```{r}
 asia_africa_transformed <- asia_africa %>%
-  dplyr::select(log_tbi, log_gdp, log_total_greenhouses, log_pm2.5, 
-                poly_cleanfuel, poly_basicsanitation, poly_safesanitation,
+  dplyr::select(log_tbi, poly_basicsanitation, poly_safesanitation,
                 sqrt_basicwater, sqrt_safewater, hdi) %>%
   pivot_longer(cols = -log_tbi, names_to = "Predictor", values_to = "Value")
 
@@ -172,6 +278,202 @@ transformedplot_location <- here( "code","analysis-code", "figures", "transforme
 ggsave(filename = transformedplot_location, plot=transformed, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
 plot(transformed)
 ```
+
+
+
+*Generalized Linear mixed model (GLMM)*
+After transformation, the data show linear relationship, therefore we perform Linear Mixed Models (LMM) 
+```{r}
+
+#Generalized Linear mixed model (GLMM)
+#without HDI
+library(lme4)
+model1<- glmer(log(tbi) ~ sqrt(pro_basicwater) + sqrt(pro_safewater) + 
+                          poly(pro_basicsanitation, 2) + poly(pro_safesanitation, 2) +
+                          (1 | country), data = asia_africa)
+summary(model1)
+
+
+```
+
+
+Interpretation:
+✔ Random intercept for country is moderate, meaning tbi varies across countries.
+✔ Residual variance is small, indicating that the model explains much of the variability
+
+✔ Intercept (5.24113) is highly significant, representing the baseline log-transformed tbi when all predictors are at their reference values.
+✔ poly(pro_basicsanitation, 2)1 (first-order term) is significant, indicating that basic sanitation has a linear effect on tbi.
+❌ poly(pro_basicsanitation, 2)2 (second-order term) is not significant, suggesting that the quadratic effect is weak or unnecessary.
+❌ pro_basicwater and pro_safewater are not significant, meaning they may not be strong predictors of tbi.
+
+
+
+
+
+```{r}
+#with HDI
+library(lme4)
+model2<- glmer(log(tbi) ~ sqrt(pro_basicwater) + sqrt(pro_safewater) + 
+                          poly(pro_basicsanitation, 2) + poly(pro_safesanitation, 2) +
+                          (1 | country) + hdi, data = asia_africa)
+summary(model2)
+
+```
+Interpretation: 
+
+✔ Random intercept for country is moderate, meaning tbi varies across countries.
+✔ Residual variance is very small, indicating that the model explains most of the variability, but this may suggest overfitting.
+
+✔ HDI (hdi) is highly significant (p < 0.001), meaning higher HDI is associated with lower tbi.
+✔ poly(pro_basicsanitation, 2)1 (first-degree term) is significant, indicating that basic sanitation has a non-linear effect on tbi.
+❌ poly(pro_basicsanitation, 2)2 (second-degree term) is not significant, suggesting that the quadratic effect is weak or unnecessary.
+❌ pro_basicwater and pro_safewater are not significant, meaning they may not be useful in predicting tbi.
+
+
+
+*check wulticolinearity*
+```{r}
+vif(model_lmm)
+```
+The Vif test shows that Pro_safesanitation is >5. We need to remove. 
+
+*fit model without non-significant predictor* 
+
+```{r}
+#refit model without non-significant predictor using lmm 
+model3 <- glmer(log(tbi) ~ hdi + poly(pro_basicsanitation, 2) + (1 | country), 
+                     data = asia_africa)
+summary(model3)
+
+```
+Interpretation:
+
+The country-level variance (0.42162) is relatively high, indicating that TB incidence varies significantly between countries.
+The residual variance (0.01748) is much smaller, meaning a significant portion of TB variation is explained by country-level differences.
+
+
+Key Findings
+✅ HDI is highly significant (Estimate = -3.67, p < 2e-16)
+
+Higher HDI is strongly associated with lower TB incidence.
+A 1-unit increase in HDI decreases log(TBI) by ~3.67.
+✅ Second-degree polynomial term for sanitation (pro_basicsanitation²) is highly significant (p = 4.15e-06)
+
+Suggests a nonlinear relationship between basic sanitation and TB incidence.
+Diminishing or increasing effects at different levels of sanitation.
+❌ First-degree polynomial term for sanitation (pro_basicsanitation¹) is NOT significant (p = 0.286)
+
+This indicates that a linear effect of sanitation is weak.
+The nonlinear (quadratic) effect is more important.
+
+
+*Performing Generalized Additive Models (GAM)*
+
+```{r}
+model4 <- gamm(log(tbi) ~ s(hdi, bs="ps") + s(pro_basicwater, bs="ps") +
+                         s(pro_safewater, bs="ps") + s(pro_basicsanitation, bs="ps") +
+                         s(country, bs="re"),
+              data = asia_africa_clean, method = "REML")
+# bam() from mgcv, which is more efficient for mixed models
+summary(model4$gam)
+plot(model4$gam)
+
+```
+
+
+
+
+
+
+```{r}
+AIC(model1)
+AIC(model2)
+AIC(model3)
+AIC(model4)
+
+BIC(model1)
+BIC(model2)
+BIC(model3)
+BIC(model4)
+```
+```{r}
+# Create a data frame for model comparison
+model_comparison <- data.frame(
+  Model = c("Model 1: Main Predictors", "Model 2: Including Covariates", "Model 3: Significant variables only", "Model 4: GAMM"),
+  AIC = c(AIC(model1), AIC(model2), AIC(model3), AIC(model4)),
+  BIC = c(BIC(model1), BIC(model2), BIC(model3), BIC(model4))
+)
+
+# Print the table
+print(model_comparison)
+
+library(here)
+
+# Define the file location using here()
+criteria_location <- here("code", "analysis-code", "tables", "criteria_output.rds")
+
+# Save the model
+saveRDS(model_comparison, file = criteria_location)
+
+
+# Save as a nicely formatted text file
+sink("model_comparison.txt")
+print(model_comparison)
+sink()
+
+```
+
+
+
+
+
+Model4 (GAM) Performs better. 
+
+Lets visualize model4 
+
+```{r}
+
+
+# Define the file path using here()
+plot_location <- here("code", "analysis-code", "figures", "gam_diagnostics.jpg")
+
+# Open JPEG device
+jpeg(plot_location, width = 2000, height = 1500, res = 300)
+
+# Arrange the plots in a grid (2 rows, 3 columns)
+par(mfrow = c(2, 3))  
+plot(model4$gam, pages = 1)  # Generate all GAM diagnostic plots
+
+# Close the graphics device to save the file
+dev.off()
+
+# Confirm file saved
+print(paste("Plot saved at:", plot_location))
+
+```
+
+
+
+```{r}
+# Create summary table
+gam_summary <- summary(model4$gam)
+
+# Extract relevant statistics
+gam_table <- data.frame(
+  Term = rownames(gam_summary$s.table),
+  EDF = gam_summary$s.table[, 1],
+  F_Value = gam_summary$s.table[, 3],
+  P_Value = gam_summary$s.table[, 4]
+)
+
+# Define the file location using here()
+summary_location <- here("code", "analysis-code", "tables", "summary_Gamm.rds")
+
+# Save the model
+saveRDS(gam_table, file = summary_location)
+```
+
+
 
 After transforming variables. They look more linear. Now GLM will be performed
 
