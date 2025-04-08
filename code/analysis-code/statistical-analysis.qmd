@@ -1,0 +1,904 @@
+---
+title: "statistical-analysis"
+format: html
+editor: visual
+---
+
+## 
+
+```{r}
+#load needed packages. make sure they are installed.
+library(here) #for data loading/saving
+library(dplyr)
+library(skimr)
+library(ggplot2)
+#install.packages("maps")
+library(maps)
+#install.packages("ggcorrplot")
+library(ggcorrplot)
+#install.packages("plm")
+library(plm)
+#install.packages("gt")
+library(gt)
+#install.packages("car")
+library(car)
+#install.packages("MASS") 
+library(MASS)
+#install.packages("tidyverse")
+library(tidyverse)
+#install.packages("reshape2")  
+library(reshape2) 
+#install.packages("scales")
+library(scales)
+library(splines)
+library(here)
+library(knitr)
+#install.packages("kableExtra")
+library(kableExtra)
+#install.packages("GGally")
+library(GGally)
+#install.packages("patchwork")
+library(patchwork)
+#install.packages("gridExtra") 
+library(gridExtra)
+#install.packages("lmerTest")
+library(lmerTest)
+#install.packages("stargazer")
+library(stargazer)
+#install.packages("lmtest")
+library(lmtest)
+#install.packages("mgcv")
+library(mgcv)
+#install.packages("Metrics")
+library(Metrics)
+#install.packages("reticulate")
+library(reticulate)
+#install.packages("xgboost")
+library(xgboost)
+#install.packages("tidymodels")y
+library(tidymodels)
+library(Metrics)
+library(gamm4)
+library(broom)
+install.packages("gratia")
+library(gratia)
+library(dplyr)
+
+
+```
+
+Load the dataset
+
+```{r}
+
+asia_africa_location <- here("data", "processed-data", "seaa.rds")
+asia_africa <- readRDS(asia_africa_location)
+
+asia_africa <- asia_africa %>%
+  filter(country != "Lesotho") #drop Lesotho, it is potential influential outlier 
+
+
+colnames(asia_africa)
+
+
+asia_africa$pro_basicwater <- as.numeric(asia_africa$pro_basicwater)
+asia_africa$pro_safewater <- as.numeric(asia_africa$pro_safewater)
+asia_africa$pro_basicsanitation <- as.numeric(asia_africa$pro_basicsanitation)
+asia_africa$pro_safesanitation <- as.numeric(asia_africa$pro_safesanitation)
+asia_africa$country <- as.factor(asia_africa$country)
+str(asia_africa)
+```
+
+## Data Analysis
+
+```{r}
+# Adding Fixed-Effect to Make Conditional Models ---
+ggplot(asia_africa, aes(x = year, y = tbi)) + 
+  geom_line(aes(group=country), col="grey") + 
+  stat_smooth(method="loess", col="black", lwd=1.5, se=FALSE)+
+  scale_x_continuous(name = "years") + 
+  scale_y_continuous(name = "Tuberculosis Incidence") +
+  theme_bw() + 
+  theme(axis.text=element_text(size=14, colour="black"), 
+        axis.title=element_text(size=14,face="bold")) +
+  theme(strip.text.x = element_text(size = 14))+ theme(legend.position="none") 
+```
+
+```{r}
+# Create scatter plot faceted by independent variable
+scatter_faceted <- ggplot(asia_africa_long, aes(x = value, y = tbi, color = country)) + 
+  geom_point(alpha = 0.6) +  # Scatter points, colored by country
+  stat_smooth(method = "loess", col = "black", lwd = 1.2, se = FALSE) +  # LOESS (non-linear) in black
+  facet_wrap(~ variable, scales = "free_x") +  # Facet by variable
+  labs(
+    title = "TBI and Its Association with Water, Sanitation, and HDI Indicators",
+    x = "Independent Variable Value",
+    y = "Tuberculosis Incidence (TBI)"
+  ) +
+  theme_bw() + 
+  theme(axis.text = element_text(size = 12, colour = "black"), 
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 14, face = "bold"), 
+        legend.position = "none")  # Hides the legend
+
+
+#save the plot 
+plots_tbi_vs_allvars_loc <- here( "results", "figures", "analysis", "plots_tbi_vs_allvars.png") # to set up location for the pictures created 
+ggsave(filename = plots_tbi_vs_allvars_loc  , plot=scatter_faceted, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
+
+print(scatter_faceted)
+
+```
+
+Non-linearity test
+
+
+```{r}
+# Compute the correlation matrix for selected variables
+cor(asia_africa[, c("tbi", "pro_basicwater", "pro_safewater", 
+                    "pro_basicsanitation", "hdi")])
+
+# Fit a linear model
+lm_model <- lm(tbi ~  pro_basicwater + pro_safewater + 
+               pro_basicsanitation + hdi, 
+               data = asia_africa)
+
+# Run the RESET test for linearity
+resettest(lm_model, power = 2:3)
+
+```
+
+```{r}
+# Fit a linear model (LM)
+lm_model <- lm(tbi ~ pro_basicwater + pro_safewater + 
+               pro_basicsanitation +  hdi, 
+               data = asia_africa)
+
+# Fit a non-linear model (GAM)
+gam_model <- gam(tbi ~ s(pro_basicwater) + s(pro_safewater) + 
+                  s(pro_basicsanitation)  + s(hdi), 
+                 data = asia_africa, method = "REML")
+
+# Compare AIC values
+AIC(lm_model, gam_model)
+
+
+# Plot residuals vs. fitted values for the linear model
+plot(lm_model$fitted.values, resid(lm_model), 
+     xlab = "Fitted Values", ylab = "Residuals", 
+     main = "Residuals vs. Fitted Plot")
+abline(h = 0, col = "red")  # Horizontal line at 0
+
+```
+
+
+
+```{r}
+
+gamm_model_interactions<- gam(
+  tbi ~ 
+    s(year) + 
+    s(pro_basicwater) + 
+    s(pro_safewater) + 
+    s(pro_basicsanitation) + 
+    s(pro_safesanitation) + 
+    s(hdi) +  
+    ti(pro_basicwater, hdi) + 
+    ti(pro_safewater, hdi) +
+    ti(pro_basicsanitation, hdi) + 
+    ti(pro_safesanitation, hdi) +
+    ti(pro_safesanitation, pro_basicwater) +
+    ti(pro_safewater, pro_basicwater) +
+    s(country, bs = "re"),         
+  family = nb(),                  
+  method = "REML",                 
+  data = asia_africa
+)
+
+
+summary(gamm_model_interactions)
+AIC(gamm_model_interactions)
+
+```
+
+Note:
+
+The warning indicate that the model is too complex, I will delete the least significant interactions:
+
+```{r}
+
+gamm_model_interactions_reduced<- gam(
+  tbi ~ 
+    s(year) + 
+    s(pro_basicwater) + 
+    s(pro_safewater) + 
+    s(pro_basicsanitation) + 
+    s(pro_safesanitation) + 
+    s(hdi) +  
+    ti(pro_basicwater, hdi) + 
+    ti(pro_safewater, hdi) +
+    ti(pro_safesanitation, pro_basicwater) +
+    ti(pro_safewater, pro_basicwater) +
+    s(country, bs = "re"),         
+  family = nb(),                  
+  method = "REML",                 
+  data = asia_africa
+)
+
+
+AIC(gamm_model_interactions_reduced)
+
+summary(gamm_model_interactions_reduced)
+
+```
+
+### Visualize the result of the final model
+
+```{r}
+# Extract summary of the model
+model_summary <- summary(gamm_model_interactions_reduced)
+
+# Parametric terms
+param_tbl <- as.data.frame(model_summary$p.table) %>%
+  tibble::rownames_to_column("term") %>%
+  rename(
+    estimate = Estimate,
+    std.error = `Std. Error`,
+    z.value = `z value`,
+    p.value = `Pr(>|z|)`
+  ) %>%
+  mutate(
+    type = "Parametric",
+    edf = NA, 
+    chi_sq = NA
+  )
+
+# Smooth terms
+smooth_tbl <- as.data.frame(model_summary$s.table) %>%
+  tibble::rownames_to_column("term") %>%
+  rename(
+    edf = edf,
+    chi_sq = `Chi.sq`,
+    p.value = `p-value`
+  ) %>%
+  mutate(
+    type = "Smooth",
+    estimate = NA, 
+    std.error = NA, 
+    z.value = NA
+  )
+
+# Combine parametric and smooth tables
+model_results_tbl <- bind_rows(param_tbl, smooth_tbl) %>%
+  select(type, term, estimate, std.error, edf, chi_sq, p.value)
+
+# Display table with gt
+model_results_tbl %>%
+  gt(groupname_col = "type") %>%
+  fmt_number(columns = where(is.numeric), decimals = 3) %>%
+  tab_header(
+    title = "Summary of GAMM Estimates",
+    subtitle = "Parametric and Smooth Terms"
+  ) %>%
+  cols_label(
+    term = "Term",
+    estimate = "Estimate",
+    std.error = "Std. Error",
+    edf = "EDF",
+    chi_sq = "Chi-square",
+    p.value = "p-value"
+  ) %>%
+  sub_missing(everything(), missing_text = "-")
+
+
+#save the table 
+
+# Save as RDS
+saveRDS(model_results_tbl, file = here::here("results", "tables", "analysis", "gamm_summary_table.rds"))
+
+```
+
+
+
+NULL Model
+
+```{r}
+model_null_gamm <- gamm(tbi ~ 1, random = list(country = ~1), data = asia_africa)
+```
+
+```{r}
+
+AIC(lm_model)
+AIC(gam_model)
+AIC(gamm_model_interactions)
+AIC(gamm_model_interactions_reduced)
+
+```
+
+Based on the table, although Generalized model with full interaction results the smallest AIC, its df is negative indicating the model instability. Therefore, we used the GAMM with reduced model, which least significant interaction is reduced.
+
+***Visualize the AIC***
+
+```{r}
+# create AIC data frame
+aic_results <- data.frame(
+  Model = c("LM", "GAM", "GAMM + Interactions", "GAMM + Interactions (Reduced)"),
+  AIC = c(4735.692, 4568.658, 2956.188, 2954.157)
+)
+
+
+# create plot 
+plot_aic <- ggplot(aic_results, aes(x = reorder(Model, AIC), y = AIC)) +
+  geom_point(size = 4, color = "darkgreen") +
+  geom_segment(aes(xend = Model, yend = 0), linetype = "dashed") +
+  geom_text(aes(label = round(AIC, 1)), hjust = -0.2, size = 4) +
+  coord_flip() +
+  labs(title = "AIC by Model", x = "Model", y = "AIC") +
+  theme_minimal()
+
+plot(plot_aic)
+```
+
+\*\*\* Print RMSE from those models\*\*\*
+
+```{r}
+
+# 1. LM Model
+pred_lm <- predict(lm_model)
+rmse_lm <- sqrt(mean((asia_africa$tbi - pred_lm)^2))
+
+# 2. GAM Model
+pred_gam <- predict(gam_model, type = "response")
+rmse_gam <- sqrt(mean((asia_africa$tbi - pred_gam)^2))
+
+
+# 4. GAMM Model with Interactions
+pred_gamm_interactions <- predict(gamm_model_interactions, type = "response")
+rmse_gamm_interactions <- sqrt(mean((asia_africa$tbi - pred_gamm_interactions)^2))
+
+# 5. Reduced GAMM Model with Interactions
+pred_gamm_interactions_red <- predict(gamm_model_interactions_reduced, type = "response")
+rmse_gamm_interactions_red <- sqrt(mean((asia_africa$tbi - pred_gamm_interactions_red)^2))
+
+# 6. NULL Model (GAMM null model)
+pred_null <- predict(model_null_gamm$gam, type = "response")
+rmse_null <- sqrt(mean((asia_africa$tbi - pred_null)^2))
+
+
+
+# Print results
+rmse_results <- data.frame(
+  Model = c("Null Model", "LM", "GAM",  "GAMM + Interactions", "GAMM + Interactions (Reduced)" ),
+  RMSE = c(rmse_null, rmse_lm, rmse_gam, rmse_gamm_interactions, rmse_gamm_interactions_red )
+)
+
+saveRDS(rmse_results, file = here("results", "tables", "analysis", "rmse_results.rds"))
+
+print(rmse_results)
+```
+
+Althought GAMM with full interaction has smallest RMSE, based on the negative value of DF. we chose Gamm with interactons (reduced)
+
+```{r}
+
+#| label: tbl-rmse
+#| tbl-cap: "RMSE Comparison of Models"
+#| echo: false
+
+# Load the table
+rmse_results <- readRDS(here("results", "tables", "analysis", "rmse_results.rds"))
+
+# Display the table
+kable(rmse_results, digits = 2)
+```
+
+Vizualise the RMSE
+
+```{r}
+
+
+plot_RMSE <- ggplot(rmse_results, aes(x = reorder(Model, RMSE), y = RMSE)) +
+  geom_point(size = 4, color = "darkred") +
+  geom_segment(aes(xend = Model, yend = 0), linetype = "dashed") +
+  geom_text(aes(label = round(RMSE, 2)), 
+            hjust = -0.2, size = 4, color = "black") +
+  coord_flip() +
+  labs(title = "RMSE by Model", x = "Model", y = "RMSE") +
+  theme_minimal()
+
+ggsave(
+  filename = here("results", "figures", "analysis", "rmse_by_model.png"),
+  plot = plot_RMSE,
+  width = 7, height = 5, dpi = 300
+)
+
+plot(plot_RMSE)
+
+# facet the AIC and RMSE plots 
+Plot_AIC_RMSE <- plot_aic + plot_RMSE + plot_layout(ncol = 2)
+
+
+
+
+# Save the plot 
+ggsave(
+  here("results", "figures", "analysis", "plot_aic_rmse.png"),
+  plot = Plot_AIC_RMSE,
+  width = 12, height = 8, dpi = 300
+)
+
+plot(Plot_AIC_RMSE)
+```
+
+Predicted and observed TBI from original dat
+
+```{r}
+
+asia_africa <- asia_africa %>%
+  mutate(predicted_tbi = predict(gamm_model_interactions_reduced, newdata = asia_africa, type = "response"))
+
+
+#Create plot
+plot_observed_predicted_original <- ggplot(asia_africa, aes(x = predicted_tbi, y = tbi)) +
+  geom_point(alpha = 0.6, color = "#1f77b4", size = 2) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray30") +
+  labs(
+    title = "Predicted vs Observed TBI (original data)",
+    x = "Predicted TBI",
+    y = "Observed TBI"
+  ) +
+  theme_minimal(base_size = 14)
+
+# Save the plot 
+ggsave(
+  here("results", "figures", "analysis", "plot_observed_predicted_original.png"),
+  plot = plot_observed_predicted_original,
+  width = 10, height = 8, dpi = 300
+)
+
+plot(plot_observed_predicted_original)
+
+```
+
+#Machine Learning read the dataset
+
+
+*Splitted Dataset* 
+```{r}
+# create setseed for reproductibility 
+ml_seed <- set.seed(2345)
+
+# Split dataset into a 75% train set and a 25% test set
+
+splitted_ml <- initial_split(asia_africa, prop= .75)
+df_train <- training(splitted_ml)
+df_test <- testing(splitted_ml)
+
+```
+
+***fit the models in to machine learning*** 
+
+The study is supposed to use Mixed Effect Random Forest (MERF). Since there is no a specific package for MERF in R,I will use xgboost 
+
+
+***Linear Model***
+
+```{r}
+# Fit a linear model (LM) with train data
+lm_model_train <- lm(tbi ~ pro_basicwater + pro_safewater + 
+               pro_basicsanitation + pro_safesanitation +  hdi, 
+               data = df_train)
+
+# Fit a non-linear model (GAM)
+gam_model_train <- gam(tbi ~ s(pro_basicwater) + s(pro_safewater) + 
+                  s(pro_basicsanitation) + s(pro_safesanitation) + s(hdi), 
+                 data = df_train, method = "REML")
+
+# Fit Gamm Model without interaction with training data 
+gamm_model_train <- gam(
+  tbi ~ 
+    s(year) + 
+    s(pro_basicwater) + 
+    s(pro_safewater) + 
+    s(pro_basicsanitation) + 
+    s(pro_safesanitation) + 
+    s(hdi) +  
+    s(country, bs = "re"),         
+  family = nb(),                  
+  method = "REML",                 
+  data = df_train
+)
+
+summary(gamm_model_train)
+
+# Fit GamM Model with interaction  with training data 
+
+
+gamm_model_interactions_train <- gam(
+  tbi ~ 
+    s(year) + 
+    s(pro_basicwater) + 
+    s(pro_safewater) + 
+    s(pro_basicsanitation) + 
+    s(pro_safesanitation) + 
+    s(hdi) +  
+    ti(pro_basicwater, hdi) + 
+    ti(pro_safewater, hdi) +
+    ti(pro_basicsanitation, hdi) + 
+    ti(pro_safesanitation, hdi) +
+    ti(pro_safesanitation, pro_basicwater) +
+    ti(pro_safewater, pro_basicwater) +
+    s(country, bs = "re"),         
+  family = nb(),                  
+  method = "REML",                 
+  data = df_train
+)
+
+summary(gamm_model_interactions_train)
+
+```
+***Fit generated data with  final model***
+```{r}
+# Fit GamM Model with interaction (reduced) with training data 
+gamm_model_interactions_reduced_train  <- gam(
+  tbi ~ 
+    s(year) + 
+    s(pro_basicwater) + 
+    s(pro_safewater) + 
+    s(pro_basicsanitation) + 
+    s(pro_safesanitation) + 
+    s(hdi) +  
+    ti(pro_basicwater, hdi) + 
+    ti(pro_safewater, hdi) +
+    ti(pro_safesanitation, pro_basicwater) +
+    ti(pro_safewater, pro_basicwater) +
+    s(country, bs = "re"),         
+  family = nb(),                  
+  method = "REML",                 
+  data = df_train
+)
+
+summary(gamm_model_interactions_reduced_train  )
+
+```
+
+
+**Fit Xgboost with train data**\*
+
+```{r}
+
+# Manually create interaction terms (to mimic GAMM)
+df_train <- df_train %>%
+  mutate(
+    int_basicwater_hdi        = pro_basicwater * hdi,
+    int_safewater_hdi         = pro_safewater * hdi,
+    int_safesanitation_basic  = pro_safesanitation * pro_basicwater,
+    int_safewater_basic       = pro_safewater * pro_basicwater
+  )
+
+df_test<- df_test %>%
+  mutate(
+    int_basicwater_hdi        = pro_basicwater * hdi,
+    int_safewater_hdi         = pro_safewater * hdi,
+    int_safesanitation_basic  = pro_safesanitation * pro_basicwater,
+    int_safewater_basic       = pro_safewater * pro_basicwater
+  )
+
+# One-hot encode 'country' and create full model matrix (train data) 
+X_train <- model.matrix(
+  tbi ~ year + pro_basicwater + pro_safewater + pro_basicsanitation +
+    pro_safesanitation + hdi + country + 
+    int_basicwater_hdi + int_safewater_hdi +
+    int_safesanitation_basic + int_safewater_basic,
+  data = df_train
+)[, -1]  # remove intercept
+
+
+# Test Data 
+X_test <- model.matrix(
+  tbi ~ year + pro_basicwater + pro_safewater + pro_basicsanitation +
+    pro_safesanitation + hdi + country + 
+    int_basicwater_hdi + int_safewater_hdi +
+    int_safesanitation_basic + int_safewater_basic,
+  data = df_test
+)[, -1]
+
+# Extract outcome
+y_train <- df_train$tbi
+y_test <- df_test$tbi
+
+# Fit XGBoost with count data (train data) 
+xgb_model_train <- xgboost(
+  data = X_train,
+  label = y_train,
+  objective = "count:poisson",
+  nrounds = 100,
+  eta = 0.1,
+  max_depth = 6,
+  subsample = 0.8,
+  colsample_bytree = 0.8,
+  verbose = 0
+)
+
+# Fit XGBoost with count data (testdata) 
+xgb_model_test <- xgboost(
+  data = X_test,
+  label = y_test,
+  objective = "count:poisson",  # appropriate for count outcomes
+  nrounds = 100,
+  eta = 0.1,
+  max_depth = 6,
+  subsample = 0.8,
+  colsample_bytree = 0.8,
+  verbose = 0
+)
+
+# Predict and evaluate
+
+
+preds_xgb_train <- predict(xgb_model_train, newdata = X_train)
+preds_xgb_test <- predict(xgb_model_test, newdata = X_test)
+
+
+df_rmse_train <- tibble(truth = y_train, estimate = preds_xgb_train)
+df_rmse_test  <- tibble(truth = y_test, estimate = preds_xgb_test)
+
+#RMSE 
+rmse(df_rmse_train, truth = truth, estimate = estimate)
+rmse(df_rmse_test, truth = truth, estimate = estimate)
+
+
+```
+
+Create a plot
+
+```{r}
+# Combine training data
+df_train_plot <- tibble(
+  actual = y_train,
+  predicted = preds_xgb_train,
+  dataset = "Train"
+)
+
+plot(df_train_plot)
+
+# Combine test data
+df_test_plot <- tibble(
+  actual = y_test,
+  predicted = preds_xgb_test,
+  dataset = "Test"
+)
+plot(df_test_plot)
+
+# Combine both for plotting
+df_plot <- bind_rows(df_train_plot, df_test_plot)
+
+# Plot predicted vs observed
+plot_obs_pred_ml <- ggplot(df_plot, aes(x = actual, y = predicted, color = dataset)) +
+  geom_point(alpha = 0.7, size = 2) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray40") +
+  facet_wrap(~ dataset) +
+  labs(
+    title = "Predicted vs Observed TBI",
+    x = "Observed TBI",
+    y = "Predicted TBI"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+# Save the plot 
+ggsave(
+  here("results", "figures", "analysis", "plot_obs_pred_ml.png"),
+  plot = plot_obs_pred_ml,
+  width = 10, height = 8, dpi = 300
+)
+
+plot(plot_obs_pred_ml)
+```
+
+***Predict and Evaluate the models using test data***
+
+```{r}
+# Predict
+lm_pred_test <- predict(lm_model_train, newdata = df_test, type = "response")
+gam_pred_test <- predict(gam_model_train, newdata = df_test, type = "response")
+gamm_pred_test <- predict(gamm_model_train, newdata = df_test, type = "response")
+gamm_inte_pred_test <- predict(gamm_model_interactions_train, newdata = df_test, type = "response")
+gamm_inte_pred_reduced_test <- predict(gamm_model_interactions_reduced_train, newdata = df_test, type = "response")
+xgb_pred_test <- predict(xgb_model_train, newdata = X_test)
+
+# Evaluate RMSE
+rmse_ml_lm <- rmse(tibble(truth = df_test$tbi, estimate = lm_pred_test), truth, estimate)
+rmse_ml_gam <- rmse(tibble(truth = df_test$tbi, estimate = gam_pred_test), truth, estimate)
+rmse_ml_gamm <- rmse(tibble(truth = df_test$tbi, estimate = gamm_pred_test), truth, estimate)
+rmse_ml_gamm_inte <- rmse(tibble(truth = df_test$tbi, estimate = gamm_inte_pred_test), truth, estimate)
+rmse_ml_gamm_inte_reduced <- rmse(tibble(truth = df_test$tbi, estimate = gamm_inte_pred_reduced_test), truth, estimate)
+rmse_ml_xgb <- rmse(tibble(truth = df_test$tbi, estimate = xgb_pred_test), truth, estimate)
+
+
+
+```
+
+```{r}
+
+# Your RMSE results — replace with your actual values if different
+rmse_original <- tibble(
+  Model = c("Null Model", "LM", "GAM", "GAMM", "GAMM + Interactions", "GAMM + Interactions (Reduced)"),
+  RMSE = c(148.58, 125.13, 85.17, 18.29, 7.77, 8.05),
+  Data = "Full Data"
+)
+
+rmse_test <- tibble(
+  Model = c("Null Model", "LM", "GAM", "GAMM", "GAMM + Interactions", "GAMM + Interactions (Reduced)"),
+  RMSE = c(NA, 129.34, 102.64, 24.48, 10.73, 10.54),
+  Data = "Test Data"
+)
+
+# Combine both into one dataframe
+rmse_combined <- bind_rows(rmse_original, rmse_test)
+
+```
+
+```{r}
+
+
+ggplot(rmse_combined, aes(x = Model, y = RMSE, fill = Data)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.6) +
+  labs(
+    title = "RMSE Comparison: Full Data vs Test Data",
+    y = "RMSE (Lower is Better)",
+    x = "Model"
+  ) +
+  scale_fill_manual(values = c("Full Data" = "#4E79A7", "Test Data" = "#F28E2B")) +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+
+
+
+```
+
+Now I want to plot the predicted value vs observed value between training data and test data
+
+```{r}
+# Let's say your best model is this
+gamm_model_interactions_test <- gam(
+  tbi ~ 
+    s(year) + s(pro_basicwater) + s(pro_safewater) +
+    s(pro_basicsanitation) + s(pro_safesanitation) + s(hdi) +
+    ti(pro_basicwater, hdi) + ti(pro_safewater, hdi) +
+    ti(pro_safesanitation, pro_basicwater) + ti(pro_safewater, pro_basicwater) +
+    s(country, bs = "re"),
+  data = df_test,
+  family = nb(),
+  method = "REML"
+)
+
+
+
+# Predicted values
+train_data_pred <- df_train %>%
+  mutate(Source = "Train", .fitted = predict(gamm_model_interactions_reduced_train, type = "response"))
+
+test_data_pred <- df_test%>%
+  mutate(Source = "Test", .fitted = predict(gamm_model_interactions_test, newdata = df_test, type = "response"))
+
+# Combine
+pred_obs_df <- bind_rows(train_data_pred, test_data_pred)
+
+
+# Create Plot 
+
+plot_observed_predicted <- ggplot(pred_obs_df, aes(x = .fitted, y = tbi, color = Source, shape = Source)) +
+  geom_point(alpha = 0.6, size = 2) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Observed vs Predicted TBI (Training vs Test Data)",
+    x = "Predicted TBI",
+    y = "Observed TBI"
+  ) +
+  theme_minimal(base_size = 14) +
+  scale_color_manual(values = c("Train" = "#1f77b4", "Test" = "#ff7f0e"))
+
+#Save the plot
+ggsave(
+  here("results", "figures", "analysis", "plot_observed_predicted_train_test .png"),
+  plot = plot_observed_predicted ,
+  width = 10, height = 8, dpi = 300
+)
+
+plot(plot_observed_predicted )
+
+#Facet the observed vs predictied for ML data and original data 
+
+plot_ob_pre_ml_vs_ori <- 
+plot(plot_observed_predicted_original + plot_observed_predicted + plot_layout(nrow  = 2))
+
+# Save the plot 
+ggsave(
+  here("results", "figures", "analysis", "plot_ob_pre_ml_vs_ori.png"),
+  plot =plot_ob_pre_ml_vs_ori,
+  width = 12, height = 8, dpi = 300
+)
+
+plot(plot_ob_pre_ml_vs_ori)
+```
+
+1.  Excellent fit Both training and test points fall very close to the diagonal
+
+That means your model accurately predicts TBI, both on data it has seen and on data it hasn’t seen
+
+This is a sign of a well-generalizing model, not overfittin
+
+2.  Low bias & low variance Predictions are neither consistently above nor below the true values
+
+There’s minimal scatter, indicating good precision
+
+3.  Consistent performance across train and test The orange (test) points closely track the blue (train) points
+
+This tells you that your model doesn't just memorize, it learns the pattern and generalizes it
+
+#Tunning the model
+
+```{r}
+
+set.seed(2345)
+
+# Cross-validation folds (same as with LASSO)
+folds <- vfold_cv(asia_africa, v = 10)
+
+#Define tunable XGBoost model
+xgb_model <- boost_tree(
+  trees = 1000,
+  learn_rate = tune(),
+  tree_depth = tune(),
+  mtry = tune(),
+  loss_reduction = tune(),
+  sample_size = tune()
+) %>%
+  set_engine("xgboost", objective = "count:poisson") %>%
+  set_mode("regression")
+
+xgb_recipe <- recipe(tbi ~ ., data = asia_africa) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_zv(all_predictors())
+
+
+# Create workflow
+
+xgb_wf <- workflow() %>%
+  add_model(xgb_model) %>%
+  add_recipe(xgb_recipe)
+
+# Define Tuning Grid 
+xgb_grid <- grid_space_filling(
+  tree_depth(),
+  learn_rate(),
+  loss_reduction(),
+  sample_size = sample_prop(),
+  finalize(mtry(), df_train),
+  size = 20
+)
+
+
+# tune with grid search 
+xgb_tuned <- tune_grid(
+  xgb_wf,
+  resamples = folds,
+  grid = xgb_grid,
+  metrics = metric_set(rmse)
+)
+
+
+# Visualize 
+autoplot_xgb <- autoplot(xgb_tuned) 
+
+# Save to file using here()
+ggsave(
+  filename = here::here("results", "figures", "analysis", "autoplot_xgb_tuning.png"),
+  plot = autoplot_xgb,
+  width = 10,
+  height = 8,
+  dpi = 300
+)
+```

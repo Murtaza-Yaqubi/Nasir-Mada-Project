@@ -14,38 +14,33 @@ library(here) #for data loading/saving
 library(dplyr)
 library(skimr)
 library(ggplot2)
-install.packages("maps")
+#install.packages("maps")
 library(maps)
-install.packages("ggcorrplot")
+#install.packages("ggcorrplot")
 library(ggcorrplot)
-install.packages("plm")
+#install.packages("plm")
 library(plm)
-install.packages("gt")
+#install.packages("gt")
 library(gt)
-install.packages("car")
+#install.packages("car")
 library(car)
-install.packages("MASS")  # Jika belum terinstall
+#install.packages("MASS")  
 library(MASS)
-install.packages("tidyverse")
+#install.packages("tidyverse")
 library(tidyverse)
-install.packages("reshape2")  # Install the package (only needed once)
+#install.packages("reshape2")
 library(reshape2)  # Load the package
-install.packages("scales")
+#install.packages("scales")
 library(scales)
-
 library(here)
 library(knitr)
-install.packages("kableExtra")
+#install.packages("kableExtra")
 library(kableExtra)
-install.packages("GGally")
+#install.packages("GGally")
 library(GGally)
-
-
-# Install and load the patchwork package
-install.packages("patchwork")
+#install.packages("patchwork")
 library(patchwork)
-
-install.packages("gtsummary")
+#install.packages("gtsummary")
 library(gtsummary)
 ```
 
@@ -53,29 +48,43 @@ Load the data.
 
 ```{r}
 #Path to data. Note the use of the here() package and not absolute paths
-data_location <- here::here("data","processed-data","clean_noslum.rds")
+aa_location <- here::here("data","processed-data","seaa.rds")
 
 #load data
-mydata <- readRDS(data_location)
+seaa_df <- readRDS(aa_location)
+unique(seaa_df$country)
+
+str(seaa_df)
+#convert some caracters variables into numerics
+
+seaa_df <- seaa_df %>%
+  mutate(across(c(pro_basicwater, pro_safewater, 
+                  pro_basicsanitation, pro_safesanitation), 
+                ~ as.numeric(.)))
 
 
-#subset for south east and Asia Africa only 
-asia_africa <- mydata %>% 
-  filter(region == c("South-East Asia", "Africa"))
-
-asia_africa <- asia_africa%>%
-  filter(country != "Lesotho") #Drop Lesotho from the observation
-
-unique(asia_africa$country)
-
-saveRDS(asia_africa, here("data", "processed-data", "asia_africa.rds"))
 ```
 
-# Data exploration through tables
+
+
+
+
+
+# Data exploration Analysis
+
+I want to create boxplot for TBI 
 
 ```{r}
 
 # Define distinct colors for each country
+# Define selected countries
+selected_countries <- c(
+  "Algeria", "Bangladesh", "Central African Republic", "Chad", "Ethiopia", "Ghana",
+  "Indonesia", "Madagascar", "Malawi", "Myanmar", "Nepal", "Senegal",
+  "Sierra Leone", "Sri Lanka", "Tanzania", "Togo", "Uganda", "Zimbabwe"
+)
+
+# Custom colors for selected countries (excluding Sierra Leone for now)
 country_colors <- c(
   "Algeria" = "#E6194B",  # Red
   "Bangladesh" = "#3CB44B",  # Green
@@ -84,7 +93,6 @@ country_colors <- c(
   "Ethiopia" = "#F58231",  # Orange
   "Ghana" = "#911EB4",  # Purple
   "Indonesia" = "#42D4F4",  # Light Blue
-  "Lesotho" = "#F032E6",  # Pink
   "Madagascar" = "#FABEBE",  # Light Red
   "Malawi" = "#469990",  # Teal
   "Myanmar" = "#E6BEFF",  # Lavender
@@ -94,14 +102,15 @@ country_colors <- c(
   "Tanzania" = "#A9A9A9",  # Gray
   "Togo" = "#FFD8B1",  # Peach
   "Uganda" = "#000075",  # Dark Blue
-  "Zimbabwe" = "#808000"  # Olive
+  "Zimbabwe" = "#808000",  # Olive,
+  "Sierra Leone" = "#008080"  # Custom Teal (added for missing color)
 )
 
 # Convert country to a factor
-asia_africa$country <- as.factor(asia_africa$country)
+seaa_df$country <- as.factor(seaa_df$country)
 
 # Create boxplot with borders
-plot1 <- ggplot(asia_africa, aes(x = country, y = tbi, fill = country)) +
+boxplot_tbi <- ggplot(seaa_df, aes(x = country, y = tbi, fill = country)) +
   geom_boxplot(color = "black", size = 0.1) +  # Add black border with thicker lines
   scale_fill_manual(values = country_colors) +  # Manually assign colors
   labs(title = "Boxplot of TBI by Country",
@@ -111,105 +120,120 @@ plot1 <- ggplot(asia_africa, aes(x = country, y = tbi, fill = country)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1),  # Rotate labels for readability
         panel.border = element_rect(color = "black", fill = NA, size = 1.5))  # Add outer frame
 
-plot_box <- here( "code","eda-code", "figures", "boxplot.png") # to set up location for the pictures created 
-ggsave(filename = plot_box, plot=plot1, width = 12, height = 8, units = "in", dpi = 300) # save the pictures created 
+tbi_plot_box <- here( "results", "figures", "eda", "tbi_boxplot.png") # to set up location for the pictures created 
+ggsave(filename = tbi_plot_box, plot=boxplot_tbi, width = 12, height = 8, units = "in", dpi = 300) # save the pictures created 
 
-plot(plot1)
-
-```
-
-```{r}
-
-# Reshape data to long format for faceting
-asia_africa_long <- asia_africa %>%
-  pivot_longer(cols = c(tbi, pro_basicwater, pro_safewater, pro_basicsanitation, 
-                        pro_safesanitation, gdp, hdi),
-               names_to = "variable", values_to = "value")
-
-# Create spaghetti plot with facets
-plot2 <- ggplot(asia_africa_long, aes(x = year, y = value, color = country)) + 
-  geom_line(aes(group = country), alpha = 0.7) +  # Different color for each country
-  stat_smooth(method = "loess", col = "black", lwd = 1.5, se = FALSE) +  # Mean line in black
-  scale_x_continuous(name = "Year") + 
-  scale_y_continuous(name = "Value") + 
-  facet_wrap(~ variable, scales = "free_y") +  # Create facets for each variable
-  theme_bw() + 
-  theme(axis.text = element_text(size = 12, colour = "black"), 
-        axis.title = element_text(size = 14, face = "bold"),
-        strip.text = element_text(size = 14, face = "bold"),  # Style facet titles
-        legend.position = "none")  # Remove legend if not needed
-
-
-plot_spageti <- here( "code","eda-code", "figures", "spageti.png") # to set up location for the pictures created 
-ggsave(filename = plot_spageti, plot=plot2, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
-
-plot(plot2)
-
-
+plot(boxplot_tbi)
 
 ```
 
+
+*** create spagethi plot*** 
 ```{r}
 
-plot3 <-  ggplot(asia_africa, aes(x = year, y = tbi, color = country)) + 
+# Line plot of TBI over time by country
+tbi_spaghety <- ggplot(seaa_df , aes(x = year, y = tbi, color = country)) + 
   geom_line(aes(group = country), alpha = 0.7) +  # Different color for each country
   stat_smooth(method = "loess", col = "black", lwd = 1.5, se = FALSE) +  # Mean line in black
   scale_x_continuous(name = "Year") + 
   scale_y_continuous(name = "Tuberculosis Incidence") +
+  labs(title = "Tuberculosis Incidence Trends Over Time by Country") +  # Add title here
   theme_bw() + 
   theme(axis.text = element_text(size = 14, colour = "black"), 
         axis.title = element_text(size = 14, face = "bold"),
         strip.text.x = element_text(size = 14),
         legend.position = "none")  # Remove legend if not needed
-plot_spageti_all <- here( "code","eda-code", "figures", "spageti-tbi.png") # to set up location for the pictures created 
-ggsave(filename = plot_spageti_all, plot=plot3, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
 
-plot(plot3)
+tbi_plot_spageti <- here( "results", "figures", "eda", "tbi_spageti.png") # to set up location for the pictures created 
+ggsave(filename = tbi_plot_spageti, plot=tbi_spaghety, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
+
+plot(tbi_spaghety)
+
 ```
+
 
 ***Creating plots to show the trend of all variables in each country over the year***
 
+
 ```{r}
+# Define scaling factor for TBI to align with percentage indicators
+tbi_scale <- 100 / max(seaa_df$tbi, na.rm = TRUE)
 
+# Reshape the percentage indicators into long format
+seaa_long <- seaa_df %>%
+  pivot_longer(
+    cols = c(pro_basicwater, pro_safewater, pro_basicsanitation, pro_safesanitation),
+    names_to = "indicator",
+    values_to = "value"
+  )
 
-# Find a scaling factor to adjust TBI to match percentage values
-max_indicator <- max(asia_africa[, c("pro_safesanitation", "pro_basicsanitation", "pro_safewater", "pro_basicwater")], na.rm = TRUE)
-max_tbi <- max(asia_africa$tbi, na.rm = TRUE)
-scale_factor <- max_indicator / max_tbi  # Scale TBI to fit
+# Prepare TBI data, scaled for plotting
+tbi_long <- seaa_df %>%
+  mutate(indicator = "TBI", value = tbi * tbi_scale) %>%
+  select(country, year, indicator, value)
 
-# Reshape the data from wide to long format
-asia_africa_long <- asia_africa %>%
-  pivot_longer(cols = c(pro_safesanitation, pro_basicsanitation, pro_safewater, pro_basicwater, tbi),
-               names_to = "Indicator", 
-               values_to = "Value")
+# Combine percentage indicators and TBI
+combined_long <- bind_rows(seaa_long, tbi_long)
 
-# Create the plot
-plot4 <- ggplot() +
-  # First, plot water, sanitation, and clean fuel indicators
-  geom_line(data = asia_africa_long, 
-            aes(x = year, y = Value, color = Indicator, group = Indicator), 
-            size = 1) +
-  # Add TBI as a separate line with a different scale
-  geom_line(data = asia_africa, 
-            aes(x = year, y = tbi * scale_factor, color = "tbi"), 
-            size = 1, linetype = "dashed") + 
-  facet_wrap(~ country) +  # Separate plots for each country
+# Set factor levels for consistent legend and color mapping
+combined_long$indicator <- factor(
+  combined_long$indicator,
+  levels = c("pro_basicwater", "pro_safewater", "pro_basicsanitation", "pro_safesanitation", "TBI"),
+  labels = c("Basic Water", "Safe Water", "Basic Sanitation", "Safe Sanitation", "TBI")
+)
+
+# Plot
+plot_all_vars <- ggplot(combined_long, aes(x = year, y = value, group = indicator)) +
+  geom_line(aes(color = indicator, linetype = indicator), size = 1) +
+  facet_wrap(~ country) +
+  scale_y_continuous(
+    name = "Water, Sanitation (%)",
+    sec.axis = sec_axis(~ . / tbi_scale, name = "TBI (per 100k)")
+  ) +
+  scale_color_manual(
+    values = c(
+      "Basic Water" = "#1f77b4",
+      "Safe Water" = "#ff7f0e",
+      "Basic Sanitation" = "#2ca02c",
+      "Safe Sanitation" = "#d62728",
+      "TBI" = "black"
+    )
+  ) +
+  scale_linetype_manual(
+    values = c(
+      "Basic Water" = "solid",
+      "Safe Water" = "solid",
+      "Basic Sanitation" = "solid",
+      "Safe Sanitation" = "solid",
+      "TBI" = "dashed"
+    )
+  ) +
+  labs(
+    title = "Trends of Water, Sanitation, HDI , and TBI (per 100k) by Country",
+    x = "Year",
+    color = "Indicator",
+    linetype = "Indicator"
+  ) +
   theme_minimal() +
-  labs(title = "Percentage of Population with Access to Water, Sanitation & TBI Trends",
-       x = "Year",
-       y = "Percentage (%)",
-       color = "Indicator") +  # Label for legend
-  scale_y_continuous(sec.axis = sec_axis(~ . / scale_factor, name = "TBI")) +  # Secondary Y-axis for TBI
-  scale_color_manual(values = c("blue", "green", "purple", "orange", "red")) +  # Custom colors
-  theme(legend.position = "bottom",  
-        axis.text.x = element_text(angle = 45, hjust = 1),
-        panel.border = element_rect(color = "black", fill = NA, size = 1))  # Rotate x-axis labels for readability
+  theme(
+    panel.border = element_blank(),  # No small borders around each panel
+    plot.background = element_rect(color = "black", fill = NA, size = 1),  # Outer border
+    panel.background = element_blank(),
+    strip.text = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
 
+#save the plot 
+plot_allvars <- here( "results", "figures", "eda", "plot_all_vars.png") # to set up location for the pictures created 
+ggsave(filename = plot_allvars , plot=plot_all_vars, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
 
-plot_location1 <- here( "code","eda-code", "figures", "line-graph-tbivsfactors.png") # to set up location for the pictures created 
-ggsave(filename = plot_location1, plot=plot4, width = 12, height = 16, units = "in", dpi = 300) # save the pictures created 
-plot(plot4)
+plot(plot_all_vars)
 ```
+
+
+
+
 
 Check the layout after saving the figures
 
@@ -218,22 +242,48 @@ Check the layout after saving the figures
 #| label: fig-multivariable 
 #| fig-cap: "Line charts of all variables"
 #| echo: FALSE
-knitr::include_graphics(here("code", "eda-code", "figures", "line-graph-tbivsfactors.png"))
+knitr::include_graphics(here("results",  "figures", "eda", "plot_all_vars.png"))
 ```
+From the plots, it can be seen that percentage of population in those countries increased while the Tuberculosis Incidence decreased during the period. 
+
 
 ***I want to show the mean of each variable every year based on regions***
 
 ```{r}
 
 
-summary_table <- tbl_summary(asia_africa, include = -c(country, region))
+summary_table <- tbl_summary(seaa_df, include = -c(country, region))
 
 
-saveRDS(summary_table, file = here("code", "eda-code", "tables", "summary_table.rds"))
+saveRDS(summary_table, file = here("results", "tables", "eda", "summary_table.rds"))
 print(summary_table)
 
 
 ```
+
+```{r}
+
+
+# Calculate mean of all relevant variables by year and region
+summary_table <- seaa_df %>%
+  group_by(region, year) %>%
+  summarise(
+    mean_tbi = mean(tbi, na.rm = TRUE),
+    mean_pro_basicwater = mean(pro_basicwater, na.rm = TRUE),
+    mean_pro_safewater = mean(pro_safewater, na.rm = TRUE),
+    mean_pro_basicsanitation = mean(pro_basicsanitation, na.rm = TRUE),
+    mean_pro_safesanitation = mean(pro_safesanitation, na.rm = TRUE),
+    mean_hdi = mean(hdi, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# View the first few rows
+head(summary_table)
+
+```
+
+
+
 
 ```{r}
 #| label: tbl-summarytable
@@ -244,108 +294,119 @@ knitr::kable(resulttable, format = "pipe")
 
 ```
 
+***Create a plot to show the trend of each variables by region***
+```{r}
+
+# Create summary table: mean of each variable per region and year
+summary_df <- seaa_df %>%
+  group_by(region, year) %>%
+  summarise(
+    mean_tbi = mean(tbi, na.rm = TRUE),
+    mean_pro_basicwater = mean(pro_basicwater, na.rm = TRUE),
+    mean_pro_safewater = mean(pro_safewater, na.rm = TRUE),
+    mean_pro_basicsanitation = mean(pro_basicsanitation, na.rm = TRUE),
+    mean_pro_safesanitation = mean(pro_safesanitation, na.rm = TRUE),
+    mean_hdi = mean(hdi, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+summary_long <- summary_df %>%
+  pivot_longer(
+    cols = starts_with("mean_"),
+    names_to = "indicator",
+    values_to = "mean_value"
+  ) %>%
+  mutate(indicator = dplyr::recode(as.character(indicator),
+    "mean_tbi" = "TBI",
+    "mean_pro_basicwater" = "Basic Water",
+    "mean_pro_safewater" = "Safe Water",
+    "mean_pro_basicsanitation" = "Basic Sanitation",
+    "mean_pro_safesanitation" = "Safe Sanitation",
+    "mean_hdi" = "HDI"
+  ))
+
+
+# Create line plot
+plot_all_vars_region <- ggplot(summary_long, aes(x = year, y = mean_value, color = region)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  facet_wrap(~ indicator, scales = "free_y") +
+  labs(
+    title = "Trends of TBI, HDI, Water and Sanitation Indicators by Region (Mean per Year)",
+    x = "Year",
+    y = "Mean Value",
+    color = "Region"
+  ) +
+  theme_minimal() +
+  theme(
+    strip.text = element_text(size = 11, face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "bottom"
+  )
+
+#save the plot 
+plot_allvars_region <- here( "results", "figures", "eda", "plot_all_vars_region.png") # to set up location for the pictures created 
+ggsave(filename = plot_allvars_region  , plot=plot_all_vars_region, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
+
+plot(plot_all_vars_region)
+```
+
+
+
 ## Data Analysis
 
 ***Test the linearity***
 
 ```{r}
 
-library(ggplot2)
-library(dplyr)
-library(tidyr)
 
 # Convert dataset to long format for faceting
-asia_africa_long <- asia_africa %>%
+seaa_df_long <- seaa_df %>%
   pivot_longer(cols = c( pro_basicwater, pro_safewater, 
                         pro_basicsanitation, pro_safesanitation, hdi),
                names_to = "variable", values_to = "value")
 
 # Create scatter plot faceted by independent variable
-scatter_faceted <- ggplot(asia_africa_long, aes(x = value, y = tbi, color = country)) + 
+plots_tbi_vs_allvars <- ggplot(seaa_df_long, aes(x = value, y = tbi, color = country)) + 
   geom_point(alpha = 0.6) +  # Scatter points, colored by country
   stat_smooth(method = "loess", col = "black", lwd = 1.2, se = FALSE) +  # LOESS (non-linear) in black
   facet_wrap(~ variable, scales = "free_x") +  # Facet by variable
-  labs(x = "Independent Variable Value", y = "Tuberculosis Incidence (TBI)") +
+  labs(
+    title = "Relationship Between Tuberculosis Incidence and Independent Variables",
+    x = "Independent Variable Value",
+    y = "Tuberculosis Incidence (TBI)"
+  ) +
   theme_bw() + 
   theme(axis.text = element_text(size = 12, colour = "black"), 
         axis.title = element_text(size = 14, face = "bold"),
         strip.text = element_text(size = 14, face = "bold"), 
         legend.position = "none")  # Hides the legend
 
+
+#save the plot 
+plots_tbi_vs_allvars_loc <- here( "results", "figures", "eda", "plots_tbi_vs_allvars.png") # to set up location for the pictures created 
+ggsave(filename = plots_tbi_vs_allvars_loc  , plot=plots_tbi_vs_allvars, width = 16, height = 12, units = "in", dpi = 300) # save the pictures created 
+
 # Show plot
-print(scatter_faceted)
-
-
-
-
+print(plots_tbi_vs_allvars)
 
 ```
+Note: 
+
+The plot shows non-linear relationship betwen Tuberculosis Incidence and other indevendent variables. 
 
 
-```{r}
 
-library(ggplot2)
-library(patchwork)  # For arranging multiple plots
-
-# Define independent variables
-independent_vars <- c("hdi", "pro_basicsanitation", "pro_safesanitation", 
-                      "pro_basicwater", "pro_safewater")
-
-# Create individual scatter plots
-plots <- lapply(independent_vars, function(var) {
-  ggplot(asia_africa, aes_string(x = var, y = "tbi")) +  
-    geom_point(color = "black") +  # Black points only, no line
-    ggtitle(paste("TBI vs", var)) + 
-    xlab(var) + 
-    ylab("TBI") + 
-    theme_minimal()
-})
-
-
-combineplot_location <- here( "code","eda-code", "figures", "scatterplot.png") # to set up location for the pictures created 
-ggsave(filename = combineplot_location, plot=final_plot, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
-plot(final_plot)
-
-```
-
-```{r}
-# Remove rows where tbi or any independent variable has missing values
-asia_africa_clean <- asia_africa %>%
-  filter(!is.na(tbi)) %>% # Remove missing tbi values
-  drop_na(all_of(independent_vars))  # Remove missing values in independent variables
-
-# Create scatter plots again with cleaned data
-plots <- lapply(independent_vars, function(var) {
-  ggplot(asia_africa_clean, aes_string(x = var, y = "tbi", color = "country")) +
-    geom_point(alpha = 0.7) +
-    geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "solid", size = 1) +
-    ggtitle(paste("TBI vs", var)) + 
-    xlab(var) + 
-    ylab("TBI") + 
-    theme_minimal() +
-    theme(legend.position = "none")  
-})
-
-# Combine all plots
-combined_plot <- wrap_plots(plots, ncol = 3)
-
-# Save the plot
-#combineplot_location <- here("code", "eda-code", "figures", "scatterplot.png") 
-#ggsave(filename = combineplot_location, plot = combined_plot, width = 16, height = 12, units = "in", dpi = 300)
-
-# Display the plot
-plot(combined_plot)
-
-
-```
+***Correlation matrix*** 
 
 Spearman's Rank Correlation (Recommended) Spearman correlation is a non-parametric method that measures monotonic relationships (whether the variables move together, not necessarily linearly).
 
 ```{r}
 
 # Compute Spearman correlation matrix
-cor_matrix_spearman <- cor(asia_africa[, c("tbi","gdp", "hdi", "pro_cleanfuel", "pro_safewater", 
-                                           "pro_basicsanitation", "pro_safesanitation", "mean_exposure_pm2.5", "total_greenhouses")], method = "spearman", use = "complete.obs")
+cor_matrix_spearman <- cor(seaa_df[, c("tbi", "hdi", "pro_safewater", "pro_basicwater", 
+                                           "pro_basicsanitation", "pro_safesanitation")], method = "spearman", use = "complete.obs") %>%
+  print()
 
 
 
@@ -354,15 +415,15 @@ cor_matrix_spearman <- cor(asia_africa[, c("tbi","gdp", "hdi", "pro_cleanfuel", 
 cor_melted <- melt(cor_matrix_spearman)
 
 # Plot heatmap
-plot5 <- ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
+plot_cor_matrix <- ggplot(cor_melted, aes(Var1, Var2, fill = value)) +
   geom_tile() +
   scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
   geom_text(aes(label = round(value, 2)), size = 4) +  # Show correlation values
   theme_minimal() +
   labs(title = "Spearman Correlation Heatmap", x = "", y = "")
-matrix_location <- here( "code","eda-code", "figures", "correlation_matrix.png") # to set up location for the pictures created 
-ggsave(filename = matrix_location, plot=plot5, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
-plot(plot5)
+matrix_location <- here("results", "figures", "eda", "correlation_matrix.png") # to set up location for the pictures created 
+ggsave(filename = matrix_location, plot=plot_cor_matrix, width = 12, height = 12, units = "in", dpi = 300) # save the pictures created 
+plot(plot_cor_matrix)
 ```
 
 ```{r}
@@ -370,17 +431,18 @@ plot(plot5)
 #| label: fig-Spearman's Correlation Matrix 
 #| fig-cap: "Spearman's Correlation Matrix "
 #| echo: FALSE
-knitr::include_graphics(here("code", "eda-code", "figures", "correlation_matrix.png"))
+knitr::include_graphics(here("results", "figures","eda",  "correlation_matrix.png"))
 ```
+
+
 
 I will performed longitudinal data analysis
 
 ```{r}
-library(car)
-#vif(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
-       pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, data = pdata)) # The error might be occure due to multicolinearity 
 
-#alias(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
+vif(lm(tbi ~ hdi + pro_safewater +pro_basicwater + pro_basicsanitation + pro_safesanitation, data = seaa_df)) # The error might be occure due to multicolinearity 
+
+alias(lm(tbi ~ gdp + hdi + pro_cleanfuel + pro_safewater + pro_basicsanitation + 
          pro_safesanitation + mean_exposure_pm2.5 + total_greenhouses, data = asia_africa))
 
 
@@ -416,7 +478,8 @@ Based on the Hausman Test, fixed effect is not consistent. Therefore, I will use
 summary(re_model)
 ```
 
-Interpretation: ***1. variance components Analyisis***
+Interpretation: 
+***1. variance components Analyisis***
 
 88% dari total variasi berasal dari perbedaan antar negara, menunjukkan bahwa perbedaan karakteristik tiap negara sangat berpengaruh terhadap insiden TBC.
 

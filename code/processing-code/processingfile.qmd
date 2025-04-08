@@ -10,13 +10,13 @@ editor:
 
 # Processing script
 
-This file contains processing data for the Final Project titlled " The effects of multi environmental exposures on Tuberculosis Incidence in Asian and African countris".
+This file contains processing data for the Final Project titlled " The effects of water and sanitation on Tuberculosis Incidence in South East Asian and African countris".
 
-***Variables in the study*** - Tuberculosis Incidence (Response Variable)
+***Variables in the study*** 
+- Tuberculosis Incidence (Response Variable)
 
-Independent Variables - Basic water - Safety Water - Greenhouse - PM2.5 - Basic Sanitation - Safe Sanitation - Slum - Fule_cooking
+- Basic water, Safety Water, Basic Sanitation, Safe Sanitation, Human Development Index (Independent Variables )
 
-Control variables: - Human Development Index - Health Expenditure - GDP
 
 # Setup
 
@@ -32,6 +32,13 @@ library(here) #to set paths
 library(purrr)
 install.packages("ggplot2")
 library(ggplot2)
+install.packages("viridis")
+library(viridisLite)
+
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("rsample") 
+library(rsample)    
 
 ```
 
@@ -47,7 +54,8 @@ https://data.worldbank.org/indicator/SH.TBS.INCD
 # note the use of the here() package and not absolute paths
 tbi_location <- here::here("data","raw-data","tbi.csv")
 tbi <- read.csv(tbi_location)
-
+```
+```{r}
 colnames(tbi)
 ```
 
@@ -129,38 +137,6 @@ safewater <- safewater %>%
  saveRDS(safewater, here("data", "processed-data", "processed-safewater.rds"))
 ```
 
-***Fuel for Cooking***
-
-```{r}
-cookingfuel_location <- here::here("data","raw-data","fule_cooking.xlsx")
-cookingfuel <- read_excel (cookingfuel_location )
-
-summary(cookingfuel)
-skimr::skim(cookingfuel)
-colnames(cookingfuel)
-```
-
-Creating long table to make the table shape consitent to allow us to combine tables in the next steps
-
-```{r}
-cookingfuel <- cookingfuel %>% 
-  select(-`Series Code`, - `1990 [YR1990]`, -`Series Name`, -`Country Code`, `2023 [YR2023]`)# delete potention confusing columns 
-
-colnames(cookingfuel) <- gsub("\\[.*\\]", "", colnames(cookingfuel))  # to delete [YR.... ] in the columns 
-
-cookingfuel <- cookingfuel %>%
-  rename(country = `Country Name`)
-
-# Reshape from wide to long format
- cookingfuel <- cookingfuel %>%
-  pivot_longer(cols = -`country`,  # All columns except 'Country' will be pivoted
-               names_to = "year", 
-               values_to = "pro_cleanfuel") %>%
-  mutate(year = as.integer(year)) %>%  # Convert Year to numeric
-  filter(year != 2023)  # Remove rows where year is 2023
-
- saveRDS(cookingfuel, here("data", "processed-data", "processed-cookingfuel.rds"))
-```
 
 ***Basic Sanitation***
 
@@ -220,124 +196,6 @@ safesanitation <- safesanitation %>%
 saveRDS(safesanitation, here("data", "processed-data", "processed-safesanitation.rds"))
 ```
 
-***Slum Area***
-
-```{r}
-slum_location <- here::here("data","raw-data","slum.xlsx")
-slum <- read_excel (slum_location)
-
-summary(slum)
-skimr::skim(slum)
-```
-
-```{r}
-slum <- slum %>% 
-  select(-`Series Code`, - `1990 [YR1990]`, -`Series Name`, -`Country Code`, `2023 [YR2023]`)# delete potention confusing columns 
-
-colnames(slum) <- gsub("\\[.*\\]", "", colnames(slum))  # to delete [YR.... ] in the columns 
-
-slum <- slum %>%
-  rename(country = `Country Name`)
-
-# Reshape from wide to long format
- slum <- slum %>%
-  pivot_longer(cols = -`country`,  # All columns except 'Country' will be pivoted
-               names_to = "year", 
-               values_to = "pro_slum") %>%
-  mutate(year = as.integer(year)) %>%  # Convert Year to numeric
-  filter(year != 2023)  # Remove rows where year is 2023
-
-saveRDS(slum, here("data", "processed-data", "processed-slum.rds"))
-```
-
-***Greenhouses***
-
-```{r}
-greenhouses_location <- here::here("data","raw-data","greenhouse.xlsx")
-greenhouses <- read_excel (greenhouses_location)
-
-summary(greenhouses)
-skimr::skim(greenhouses)
-```
-
-```{r}
-greenhouses <- greenhouses %>% 
-  select(-`Series Code`, - `1990 [YR1990]`, -`Series Name`, -`Country Code`, `2023 [YR2023]`)# delete potention confusing columns 
-
-colnames(greenhouses) <- gsub("\\[.*\\]", "", colnames(greenhouses))  # to delete [YR.... ] in the columns 
-
-greenhouses <- greenhouses %>%
-  rename(country = `Country Name`)
-
-# Reshape from wide to long format
- greenhouses <- greenhouses %>%
-  pivot_longer(cols = -`country`,  # All columns except 'Country' will be pivoted
-               names_to = "year", 
-               values_to = "total_greenhouses") %>% # Total greenhouse gas in million metric cubic ton including emissions and removals from Land Use, Land-Use Change, and Forestry (LULUCF)
-  mutate(year = as.integer(year)) %>%  # Convert Year to numeric
-  filter(year != 2023)  # Remove rows where year is 2023
- 
-saveRDS(greenhouses, here("data", "processed-data", "processed-greenhouses.rds"))
-```
-
-***PM2.5***
-
-```{r}
-pm25_location <- here::here("data","raw-data","pm25.xlsx")
-pm25 <- read_excel (pm25_location)
-
-summary(pm25)
-skimr::skim(pm25)
-```
-
-```{r}
-pm25 <- pm25 %>% 
-  select(-`Series Code`, - `1990 [YR1990]`, -`Series Name`, -`Country Code`, `2023 [YR2023]`)# delete potention confusing columns 
-
-colnames(pm25) <- gsub("\\[.*\\]", "", colnames(pm25))  # to delete [YR.... ] in the columns 
-
-pm25 <- pm25 %>%
-  rename(country = `Country Name`)
-
-# Reshape from wide to long format
- pm25 <- pm25 %>%
-  pivot_longer(cols = -`country`,  # All columns except 'Country' will be pivoted
-               names_to = "year", 
-               values_to = "mean_exposure_pm2.5") %>% #PM2.5 air pollution, mean annual exposure (micrograms per cubic meter)
-  mutate(year = as.integer(year)) %>%  # Convert Year to numeric
-  filter(year != 2023)  # Remove rows where year is 2023
- 
- saveRDS(pm25, here("data", "processed-data", "processed-pm25.rds"))
-```
-
-***GDP***
-
-```{r}
-gdp_location <- here::here("data","raw-data","gdp.csv")
-gdp <- read.csv (gdp_location)
-
-summary(gdp)
-skimr::skim(gdp)
-```
-
-```{r}
-gdp <- gdp %>% 
-  select(-`Series.Code`, , -`Series.Name`, -`Country.Code`)# delete potention confusing columns 
-
-colnames(gdp) <-gsub("X(\\d+)..YR\\d+.", "\\1", colnames(gdp))  # to delete [YR.... ] in the columns 
-gdp <- gdp %>%
-  rename(country = Country.Name)
-
-# Reshape from wide to long format
- gdp <- gdp %>%
-  pivot_longer(cols = -`country`,  # All columns except 'Country' will be pivoted
-               names_to = "year", 
-               values_to = "gdp") %>% #US Dollar 
-  mutate(year = as.integer(year)) %>%  # Convert Year to numeric
-  filter(year != 2023)  # Remove rows where year is 2023
- 
-saveRDS(gdp, here("data", "processed-data", "processed-gdp.rds"))
-```
 
 ***Human Development Index***
 
@@ -363,10 +221,12 @@ saveRDS(hdi, here("data", "processed-data", "processed-hdi.rds"))
 
 ```{r}
 #create list of dataset
-datasets <- list(tbi, cookingfuel, waterbasic, safewater, slum, pm25, greenhouses, basicsanitation, safesanitation, gdp, hdi)
+datasets <- list(tbi,  waterbasic, safewater,  basicsanitation, safesanitation, hdi)
 
 # Merge all datasets based on "country" and "year"
 combined_df <- reduce(datasets, full_join, by = c("country", "year"))
+
+saveRDS(hdi, here("data", "processed-data", "combined-data.rds"))
 ```
 
 
@@ -437,23 +297,12 @@ write.csv(combined_df, here("data", "processed-data", "combined-dataset.csv"), r
 saveRDS(combined_df, here("data", "processed-data", "combined-dataset.rds"))
 ```
 
-### Exluding slum dataset 
-
-Slum dataset is different from other dataset, the observation is every 2 years.
-I want to create subset without slum data
-
-```{r}
-no_slum <- combined_df %>% 
-  select(-pro_slum) 
-
-
-```
 
 Now, I want to drop all NA observation
 
 ```{r}
 
-no_slum <- no_slum %>%
+combined_df <- combined_df %>%
   filter(if_all(everything(), ~ !is.na(.) & . != "" & . != ".."))
 ```
 
@@ -461,143 +310,133 @@ Now, I want to delete countries which have incomplete observation in all years.
 
 ```{r}
 # Count the number of rows for each country
-complete_countries <- no_slum %>%
+complete_countries <- combined_df %>%
   group_by(country) %>%
   summarise(row_count = n()) %>%
   filter(row_count == 21) %>%
   pull(country)  # Extract only countries with exactly 21 rows
 
 # Keep only those countries in the dataset
-clean_noslum <- no_slum %>%
+combined_df <- combined_df %>%
   filter(country %in% complete_countries)
 
 # Print first few rows to check
-head(clean_noslum)
+head(combined_df)
 
 
-table(clean_noslum$year, clean_noslum$country) # to make sure that all countries have complete year 
-dim(clean_noslum)
+table(combined_df$year, combined_df$country) # to make sure that all countries have complete year 
+dim(combined_df)
 
-unique(clean_noslum$country)
+unique(combined_df$country)
 
 
 
 ```
 
 ```{r}
-clean_noslum <- clean_noslum %>%
-  mutate(across(c(pro_cleanfuel, pro_basicwater, pro_safewater, pro_basicsanitation, pro_safesanitation, mean_exposure_pm2.5, total_greenhouses, pro_basicsanitation, gdp), as.numeric))
-
-summary(clean_noslum)
-
-
-saveRDS(clean_noslum, here("data", "processed-data", "clean_noslum.rds")) # save the file 
+write.csv(combined_df, here("data", "processed-data", "combined-df.csv"), row.names = FALSE)
 
 ```
 
 
 
-### Creating clean dataset inlcuding slum
-
-Note: Slum dataset only contain observation every two years. In this dataset, I will follow the year where slum has observation. 
-```{r}
-# Define the required years
-required_years_alldata <- c(2000, 2002, 2004, 2006, 2008, 2010, 2012, 2014, 2016, 2018, 2020)
-
-# Filter the dataset for the required years
-all_data <- combined_df %>%
-  filter(year %in% required_years_alldata) %>%
-  group_by(country) %>%
-  filter(all(required_years_alldata %in% year)) %>%
-  ungroup()
-
-
-all_data  <- all_data  %>%
-  filter(year %in% required_years_alldata) %>%  # Keep only required years
-  group_by(country) %>%
-  filter(n_distinct(year) == length(required_years_alldata)) %>%  # Ensure all years exist for each country
-  ungroup()
-
-
-all_data <- all_data %>%
-  mutate(across(where(is.character), ~ na_if(.x, ".."))) %>%  # Convert ".." to NA only for character columns
-  drop_na()  # Remove rows with any NA values
-
-
-# View the filtered data
-print(all_data )
-
-unique(all_data$country)
-# Optionally, save the filtered data to a new CSV file
-#write.csv(filtered_hdi, "filtered_hdi_selected_years.csv", row.names = FALSE)
-  
-```
+***Only including countries from Couth East Asia and African COuntries*** 
 
 ```{r}
-ggplot(all_data, aes(x = year, y = tbi, group = country, color = country)) +
-  geom_line(alpha = 0.7) +  # Transparency to see overlapping lines
-  labs(title = "Spaghetti Plot of TBC Incidence",
-       x = "Year",
-       y = "TBC Incidence") +
-  theme_minimal() +
-  theme(legend.position = "none") 
-```
-
-```{r}
-# convert variables into numeric
-
-all_data <- all_data %>%
-  mutate(across(c(pro_cleanfuel, pro_basicwater, pro_safewater, pro_slum, pro_basicsanitation, pro_safesanitation, mean_exposure_pm2.5, total_greenhouses, pro_basicsanitation, gdp), as.numeric))
-summary(all_data)
-str(all_data)
-
-saveRDS(all_data, here("data", "processed-data", "clean_data_withslum.rds")) # save the file 
-write.csv(all_data, here("data", "processed-data", "clean_data_withslum.csv"), row.names = FALSE)
-unique(all_data$country)
-```
-
-
-
-```{r}
-all_asiaafrica <- all_data %>% 
+asia_africa <- combined_df %>% 
   filter(region %in% c("South-East Asia", "Africa"))
 
-dim(all_asiaafrica)
+dim(asia_africa)
 
-unique(all_asiaafrica$country)
+unique(asia_africa$region)
 
-m2 <- lm(log(tbi) ~ pro_slum, data = all_asiaafrica)
-summary(m2)
 
-plot(m2)
+# save the asia africa dataset
+
+write.csv(combined_df, here("data", "processed-data", "asia_africa.csv"), row.names = FALSE)
+saveRDS(combined_df, here("data", "processed-data", "asia_africa.rds"))
 ```
 
-
+***Visualize TBI*** 
 ```{r}
-library(reshape2)  # To reshape data for ggplot
 
-# Compute Spearman correlation matrix
-cor_matrix_spearman_slum <- cor(all_asiaafrica[, c("tbi","gdp", "hdi", "pro_cleanfuel", "pro_safewater", 
-                                           "pro_basicsanitation", "pro_safesanitation", "pro_slum")], 
-                           method = "spearman", use = "complete.obs")
-
-# Melt the matrix into long format for ggplot
-cor_melted_slum <- melt(cor_matrix_spearman_slum)
-
-# Plot heatmap
-ggplot(cor_melted_slum, aes(Var1, Var2, fill = value)) +
-  geom_tile() +
-  scale_fill_gradient2(low = "red", mid = "white", high = "blue", midpoint = 0) +
-  geom_text(aes(label = round(value, 2)), size = 4) +  # Show correlation values
+# Line plot of TBI over time by country
+ggplot(asia_africa, aes(x = year, y = tbi, group = country, color = country)) +
+  geom_line(alpha = 0.7) +
+  labs(title = "TBI Trends in Asia and Africa (2000–2020)",
+       x = "Year",
+       y = "TBI") +
   theme_minimal() +
-  labs(title = "Spearman Correlation Heatmap", x = "", y = "")
+  theme(legend.position = "none")  # Hide legend if there are many countries
+
+
 ```
+
+It can be seen that Lesotho has very high observation and potentially become outlier. It is better to drop the observation. 
+
+```{r}
+seaa <- asia_africa%>%
+  filter(country != "Lesotho") 
+
+#save the final dataset 
+write.csv(seaa, here("data", "processed-data", "seaa.csv"), row.names = FALSE)
+saveRDS(seaa, here("data", "processed-data", "seaa.rds"))
+```
+
+```{r}
+# Line plot of TBI over time by country
+ggplot(seaa, aes(x = year, y = tbi, group = country, color = country)) +
+  geom_line(alpha = 0.7) +
+  labs(title = "TBI Trends in Asia and Africa (2000–2020)",
+       x = "Year",
+       y = "TBI") +
+  theme_minimal() +
+  theme(legend.position = "none")  # Hide legend if there are many countries
+```
+
 
 
 ```{r}
-ggplot(all_asiaafrica, aes(x = year, y = pro_slum, group = country)) +
-  geom_line() +
-  facet_wrap(~ country) +  # Creates separate plots for each country
-  theme_minimal()
+
+ggplot(asia_africa, aes(x = year, y = tbi, group = country, color = country)) +
+  geom_line(alpha = 0.9) +
+  facet_wrap(~ region) +
+  scale_color_viridis_d(option = "turbo") +  # "plasma", "cividis", or "turbo" are good options
+  labs(title = "TBI Trends (2000–2020) by Region",
+       x = "Year",
+       y = "TBI",
+       color = "Country") +
+  theme_minimal() +
+  theme(legend.position = "right",
+        legend.key.height = unit(0.5, "cm"),
+        legend.text = element_text(size = 8))
+
 ```
+
+
+# Machine Learning Data 
+I will create machine learning data 
+
+```{r}
+# create setseed for reproductibility 
+ml_seed <- set.seed(2345)
+
+# Split dataset into a 75% train set and a 25% test set
+
+splitted_ml <- initial_split(asia_africa, prop= .75)
+df_train <- training(splitted_ml)
+df_test <- testing(splitted_ml)
+
+
+
+# Save training set
+saveRDS(df_train, file = here("data", "processed-data", "df_train.rds"))
+
+# Save test set
+saveRDS(df_test, file = here("data", "processed-data", "df_test.rds"))
+
+
+```
+
+
 

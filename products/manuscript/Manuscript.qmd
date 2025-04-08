@@ -213,21 +213,13 @@ The study applied Generalized Additive Mixed Model (GAMM). The model can
 capture mixed effect of countries on Tuberculosis Incidence with non
 linear relationship. The data analysis started by looking at the
 relationship between Tuberculosis Incidence and Predictors. Non linear
-relationship was discovered.Next step is to perform non-linear
-relationship to looking at form of relationship. Human Development Index
+relationship was discovered. Human Development Index
 (HDI), Access to basic water and well-managed water show curvature
 relationship, while access to basic sanitation and well-managed
-sanitation show polynomial. Data transformation was performed based.
-After data transformation, we fit model1, which only includes water and
-sanitation variables (as main variables in this study), model2 includes
-all predictors (HDI, access to water and sanitation), model3 only
-includes significant variables in the previous model. Model 1, 2 and 3
-use Generalized Linear Mixed Model (GLMM). We also performed VIF test to
-look at multicollinearity. Model 4 uses Generalized Additive Mixed
-Models. Moreover, BIC and AIC tests were performed to look at the best
-model. BIC and AIC tests found that Model 4 (GAMM) performs better with
-the smallest BIC and AIC. To be able to interpret GAMM better, we
-visualize the result into plots.
+sanitation show polynomial. There are several models fitted in the study, we start with linear model with all predictors included, followed by Generalized Addictive Models (GAM), Generalized Mixed Addictive Models (GAMM) without interaction, Generalized Mixed Addictive Models (GAMM) with two factor interaction, and Generalized Mixed Addictive Models (GAMM) with two factor interaction after drop interaction which are not significant. After fitting the models, RMSE and AIC were printed to chose the best models. Based on the RMSEs and AICs, GAMM with interaction after deleting unsigniuficant interactions performed best. The RMSE and AIC were visulized using plot for better understanding. 
+
+To maximize test the performance of the model, machine learning was performed. We created splitted data with 75% train data and 25 % test data and setseed (2345). RMSEs and AICs were printed to see the performance of the models and plotted. The final model was fitted into a machine learning, XGBoost. The method is very plexible and can deal with the data conditions (non-linear relationship, some multicolinearity, and binomial distribution). Finally, the model was tunned. 
+
 
 {{< pagebreak >}}
 
@@ -235,203 +227,169 @@ visualize the result into plots.
 
 ## Exploratory/Descriptive analysis
 
-There are some exploratory data analysis conducted and resulted table,
-and charts. Table 1 shows the summary statistics including min, mean,
-max, and standard deviation of all variables.
-
-NOTE: I still have issue in saving the tables. I am still working on it.
-I will show it next step.
-
-```{r}
-#| label: tbl-summarytable
-#| tbl-cap: "Data summary table."
-#| echo: FALSE
-resulttable=readRDS (here("code", "eda-code", "tables", "summary_table.rds"))
-knitr::kable(resulttable)
-```
-
-The line graph ( @fig-1 ) shows the trend of all variables over the
-period in each country. It can be seen that the majority of country
-showed the decreases trend in tuberculosis incidence over 21 years
-period. All countries showed the increase trend in percentage of
-population using using basic and safe drinking water, basic and safe
-sanitation, except Zimbabuwe showing the decrease in percentage of
-population using basic drinking water and safe sanitation.
+Firs of all, the pattern of the data was explored. The trend of Tuberculosis Incidence for each country during the period was assesed using spagethi plots. The ( @fig-1 ) shows that most countries shows a dicrease of tuberculosis incidence over the period of time. 
 
 ```{r}
 
 #| label: fig-1
-#| fig-cap: "Trends of all variable over the period in each country"
+#| fig-cap: "Trends of Tuberculosis of each country from 2000 to 2020"
 #| echo: FALSE
-knitr::include_graphics(here("code","eda-code","figures","line-graph-tbivsfactors.png"))
-
+knitr::include_graphics(here("results", "figures", "eda", "tbi_spageti.png"))
 ```
 
-( @fig-2 ) shows spaghetti plots in each variables. We can see the
-trends of each country in every variables. It can be seen that generally
-most of the countries show the increase trends in water and sanitation,
-and human development index
+Figure ( @fig-2 ) shows the trend of percentage of population using safe water, basic water, safe sanitation, basic sanitation, tuberculosis incidence, and human development index over the prerion for each country. It can be seen that the percentage of population having access to water and sanitation and human development index increase over the time, while the tuberculosis incidence decrease. Figure ( @fig-3 ) show the trends of all variables based on region. 
 
 ```{r}
-
 #| label: fig-2
-#| fig-cap: "Spaghetti plots in each variables"
+#| fig-cap: "Trends of All Variables over the time 2000 to 2020 by countries"
 #| echo: FALSE
-knitr::include_graphics(here("code","eda-code","figures","spageti.png"))
-
+knitr::include_graphics(here("results", "figures", "eda", "plot_all_vars.png"))
 ```
 
-Now lets take a more detail tuberculosis incidence in each country over
-the year using the following box plot. Lesotho leads the incidence
-followed by Myanmar and Tanzania.
 
 ```{r}
-
 #| label: fig-3
-#| fig-cap: "Boxplot plots for each Country"
+#| fig-cap: "Trends of All Variables over the time 2000 to 2020 by countries"
 #| echo: FALSE
-knitr::include_graphics(here("code","eda-code","figures","boxplot.png"))
-
+knitr::include_graphics(here("results", "figures", "eda", "plot_all_vars_region.png"))
 ```
+
+
 
 ## Basic statistical analysis
 
-As first step of statistical analysis. Using scatter plot to show the
-linearity between tuberculosis incidence and predictors. ( @fig-4 )
-shows the scatter plots. The scatter plots do not show linear
-relationship between tuberculosis Incidence and predictors.
+
+
+As first step of statistical analysis. linearity test was performed, the result shows that there is non-linear relationship between tuberculosis incidence and other predictors. Loess method is used to show the non-linear relationship betwen tuberculosis incidence and predictors. ( @fig-4 ) shows the relationship between tuberculosis incidence and predictors and ( @fig-5 ) show the relationhsip after data transformation. It can be seen that after data transformed, non-linear relationship stil exists. Therefore, Generalized Addittive Mixed Model is used in this study. 
+
 
 ```{r}
 
 #| label: fig-4
-#| fig-cap: "Scatter plots between Tuberculosis Incidence and Predictors "
+#| fig-cap: "Non-linear relationhsip between Tuberculosis Incidence and Predictors "
 #| echo: FALSE
-knitr::include_graphics(here("code","eda-code","figures","scatterplot.png"))
+knitr::include_graphics(here("results","figures", "analysis", "plots_tbi_vs_allvars.png"))
 
 ```
+```{r}
+#| label: fig-5
+#| fig-cap: "Non-linear relationhsip between Tuberculosis Incidence and Predictors after transfirmation "
+#| echo: FALSE
+knitr::include_graphics(here("results","figures", "analysis", "plot_transformed.png"))
+```
+
+
 
 Before going further, we need to look at correlation between
-tuberculosis Incidence and all predictors.
-
-Since they show non linearity, spearman's correlation performed and
-showing in the following correlation matrix. See ( @fig-5 )
+tuberculosis Incidence and all predictors. Since they show non linearity, spearman's correlation performed and showing in the following correlation matrix. See ( @fig-6 ) shows  that some variables have multi collinearity. The matrix shows that water and sanitation have low correlation with tuberculosis incidence. 
 
 ```{r}
 
-
-#| label: fig-5
-#| fig-cap: "Spearman Correlation Matrix "
-#| echo: FALSE
-knitr::include_graphics(here("code","eda-code","figures","correlation_matrix.png"))
-
-```
-
-Now, we want to assess non linear relationship.
-
-```{r}
 
 #| label: fig-6
-#| fig-cap: "Nonlinear relationship"
+#| fig-cap: "Spearman Correlation Matrix "
 #| echo: FALSE
-knitr::include_graphics(here("code","analysis-code","figures","nonlinear.png"))
-
+knitr::include_graphics(here("results","figures", "eda", "correlation_matrix.png"))
 
 ```
 
-After performing nonlinear model, data transformation used based on the
-shave or distribution of the plots from nonlinear relationship plots (
-@fig-6 ) above. ( @fig-7 ) shows the data distribution after data
-transformation.
-
-```{r}
-
-#| label: fig-7
-#| fig-cap: "transformed data plots"
-#| echo: FALSE
-knitr::include_graphics(here("code","analysis-code","figures","transformed.png"))
-
-
-```
 
 ## Full analysis
 
-There are four models build; fitting model with only water and
-sanitation variables, then fitting models including co-variate (HDI).
-The third model is to fit only significant variables. The first three
-models use Generalized Linear Mixed Models (GLMM), while the last model
-used Generalized Additive Mixed Models (GAMM). Those models were
-compared using AIC and BIC criteria to select the best/ the final
-models.
+We start with linear model with all predictors included, followed by Generalized Addictive Models (GAM), Generalized Mixed Addictive Models (GAMM) without interaction, Generalized Mixed Addictive Models (GAMM) with two factor interaction, and Generalized Mixed Addictive Models (GAMM) with two factor interaction after drop interaction which are not significant. AIC and RMSE are used to select the best model. ( @fig-7) show that  and Generalized Mixed Addictive Models (GAMM) with two factor interaction after dropin insignificant interaction performed better. GAMM with full interactions has low AIC and RMSE, but the degree of freedom shows negarive values, indicating inconsistency of the model. 
+
 
 ```{r}
-#| label: tbl-summarytable
-#| tbl-cap: "Model Criteria"
-#| echo: FALSE
-resulttable2=readRDS (here("code", "analysis-code", "tables", "criteria_output.rds"))
-knitr::kable(resulttable2)
-```
 
-Based on BIC and AIC criteria, the best model fit the data is
-Generalized Additive Mixed Models.
-
-\$ \log(\text{TBI}) \sim s(\text{hdi}) + s(\text{pro\_basicwater}) +
-s(\text{pro\_safewater}) + s(\text{pro\_basicsanitation}) +
-s(\text{country}, \text{bs}="re") \$
-
-```{r}
-#| label: tbl-summarytable
-#| tbl-cap: "Generalized Additive Mixed Models"
-#| echo: FALSE
-resulttable3=readRDS (here("code", "analysis-code", "tables", "summary_Gamm.rds"))
-knitr::kable(resulttable3)
-```
-
-This study employed a Generalized Additive Model (GAM) with a Gaussian
-family and identity link function to examine the association between
-tuberculosis incidence and key environmental and socioeconomic factors
-across multiple countries. The model incorporated smooth functions for
-continuous predictors and a random effect for country to account for
-within-country variability. The results indicate that HDI and basic
-sanitation are significant determinants of tuberculosis incidence, while
-access to basic and safe water did not show strong associations.
-
-The smooth function for Human Development Index (HDI) was highly
-significant (p \< 2e-16), with an estimated effective degrees of freedom
-(EDF) = 4.283, confirming a non-linear relationship between HDI and
-tuberculosis incidence. The effect was strongest at lower HDI values,
-suggesting that improvements in socioeconomic conditions may have the
-greatest impact in reducing tuberculosis burden in low-HDI countries.
-
-Among the water and sanitation variables, basic water access was not
-statistically significant (p = 0.73379), indicating no strong evidence
-of an association between water coverage and tuberculosis incidence.
-Similarly, safe water access was not significant at α = 0.05 (p =
-0.05605), suggesting only a weak relationship. However, basic sanitation
-access was statistically significant (p = 0.00542, EDF = 3.845),
-suggesting that higher access to sanitation is associated with a
-reduction in tuberculosis incidence. This highlights the importance of
-improving sanitation infrastructure as a potential intervention for
-tuberculosis control.
-
-The random effect of country (s(country)) was highly significant (p \<
-2e-16, EDF = 16.768), indicating substantial between-country variation
-in tuberculosis incidence. This justifies the inclusion of random
-effects to account for country-level heterogeneity and underscores the
-need for context-specific policy interventions tailored to national
-conditions.
-
-The model fit was strong, with an adjusted R² of 0.974, indicating that
-97.4% of the variance in tuberculosis incidence was explained by the
-model. The scale estimate was 0.014598, suggesting a low residual
-variance, which reflects a well-fitting model.
-
-```{r}
 #| label: fig-7
-#| fig-cap: "Generalized Additive Mixed Models"
+#| fig-cap: "AIC and RMSE "
 #| echo: FALSE
-knitr::include_graphics(here("code","analysis-code","figures","gam_diagnostics.jpg"))
+knitr::include_graphics(here("results","figures", "analysis", "plot_aic_rmse.png"))
+```
+
+***Result of Final Model***
+
+We fitted a generalized additive mixed model (GAMM) using a negative binomial distribution with a log link to model tuberculosis incidence (TBI) across countries in South East Asia and Africa. The model incorporated smooth functions of year, access to basic and safe water and sanitation services, and the Human Development Index (HDI), as well as interaction terms between key environmental and socioeconomic indicators. A random effect was included for country to account for unobserved heterogeneity. (@tbl-1 ) shows the result of the final model. 
+```{r}
+#| label: tbl-1
+#| tbl-cap: "Summary of GAMM Parametric and Smooth Terms"
+#| echo: false
+#| message: false
+#| warning: false
+
+# Load and display the saved gt table
+gamm_tbl <- readRDS(here::here("results", "tables", "analysis", "gamm_summary_table.rds"))
+
+
+
+gamm_tbl %>%
+  gt(groupname_col = "type") %>%
+  fmt_number(columns = where(is.numeric), decimals = 3) %>%
+  tab_header(
+    title = "Summary of GAMM Estimates",
+    subtitle = "Parametric and Smooth Terms"
+  ) %>%
+  cols_label(
+    term = "Term", estimate = "Estimate", std.error = "Std. Error",
+    edf = "EDF", chi_sq = "Chi-square", p.value = "p-value"
+  ) %>%
+  fmt_missing(everything(), missing_text = "-")
 
 ```
+
+
+The model demonstrated excellent fit, explaining 99.7% of the deviance (adjusted R² = 0.997). Among the smooth terms, year (edf = 3.38, p < 0.001), access to basic water (edf = 6.52, p = 0.013), access to safe water (edf = 1.00, p < 0.001), and HDI (edf = 1.00, p < 0.001) showed significant non-linear associations with TBI. In contrast, basic and safe sanitation services were not significantly associated with TBI after accounting for other variables.
+
+Notably, several two-dimensional interaction smooths were also statistically significant, including between basic water and HDI (p < 0.001), safe water and HDI (p < 0.001), safe sanitation and basic water (p < 0.001), and safe water and basic water (p < 0.001), suggesting complex joint effects of environmental infrastructure and development on TBI patterns. The random effect for country was highly significant, capturing substantial variation across national contexts.
+
+These findings underscore the importance of improving access to clean water and addressing socioeconomic disparities to reduce tuberculosis burden, while also highlighting the complex interplay between infrastructure and development indicators.
+
+
+
+### Machine Learning
+
+To test the consistency of the model, machine learning was used. 
+
+Using Splitted / generated data shows that the model has a consistent result. (@fig-8 ) shows the observed and predicted values both original and generated data. It can be seen that both original data and generated data (both test and training data) have similiar pattern and the plots lay very closed or around the line. 
+
+```{r}
+#| label: fig-8
+#| fig-cap: "Predicted vs Observed TBI originalvs generated data "
+#| echo: FALSE
+knitr::include_graphics(here("results","figures", "analysis", "plot_ob_pre_ml_vs_ori.png"))
+```
+
+
+
+Figure (@fig-9) shows the performance of machine learning (XGboost). The figure shows how well the model predicted tuberculosis incidence (TBI) by comparing the predicted values with the actual reported values for both the training and test data. The dotted line represents perfect prediction—where predicted and actual values would match exactly.
+
+For the training data (right side), the dots are closely lined up along the diagonal line, which means the model predicted the TBI values very accurately for the data it was trained on.
+
+For the test data (left side), most of the points are still close to the line, but some are spread out more, especially at higher TBI values. This means that while the model still performs well on new data, it slightly underestimates TBI in some cases when the actual rates are very high.
+
+Overall, the plot shows that the model is reliable and provides accurate predictions for TBI, even on data it hasn’t seen before. This suggests the model can be useful for forecasting TB burden in similar settings.
+
+```{r}
+#| label: fig-9
+#| fig-cap: "Predicted and observed value for Xgboost using train and test data"
+#| echo: FALSE
+knitr::include_graphics(here("results","figures", "analysis", "plot_obs_pred_ml.png"))
+```
+
+
+***Tunning for XGBoost***
+
+```{r}
+#| label: fig-10
+#| fig-cap: "Tunning Result for XGBoost"
+#| echo: FALSE
+knitr::include_graphics(here("results","figures", "analysis", "autoplot_xgb_tuning.png"))
+```
+
+Figure (@fig-10) shows the results of hyperparameter tuning for the XGBoost model, showing how different parameter values affected the model’s performance, measured by root mean square error (RMSE). Each dot represents one combination of hyperparameters tested during cross-validation. These results highlight that careful tuning of parameters, especially learning rate, tree depth, and sampling rate, is essential to significantly improve model accuracy. The tuning process allowed us to identify a combination of settings that minimized prediction error and led to a more reliable model.
+
+
+
 
 {{< pagebreak >}}
 
@@ -440,6 +398,9 @@ knitr::include_graphics(here("code","analysis-code","figures","gam_diagnostics.j
 ## Summary and Interpretation
 
 *Summarize what you did, what you found and what it means.*
+
+
+I am still working on it and read more paper to use in this discussion part. I will complete this part this week 
 
 ## Strengths and Limitations
 
