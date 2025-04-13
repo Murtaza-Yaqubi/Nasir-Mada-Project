@@ -22,6 +22,10 @@ Quarto documentation](https://quarto.org/) for other formats.
 # load a few R packages
 library(here)
 library(knitr)
+install.packages("dplyr")
+library(dplyr)
+install.packages("gt")
+library(gt)
 ```
 
 **Authors**
