@@ -6,8 +6,8 @@ format:
     toc: false
     number-sections: true
     highlight-style: github
-bibliography: ../../assets/dataanalysis-references.bib
-csl: ../../assets/american-journal-of-epidemiology.csl
+bibliography: assets/dataanalysis-references.bib
+csl: assets/american-journal-of-epidemiology.csl
 editor: 
   markdown: 
     wrap: 72
@@ -39,11 +39,11 @@ library(gt)
 
 1.  College of Public Health, University of Georgia, Athens, GA, USA.
 2.  Faculty of Public Health, Universitas Tadulako, Palu, Indonesia.
-3.  Yet another Affiliation.
+
 
 $*$ These authors contributed equally to this work.
 
-$\land$ Corresponding author: some\@email.com
+$\land$ Corresponding author: some\@muhammad.nasir@uga.edu
 
 $\dagger$ Disclaimer: The opinions expressed in this article are the
 author's own and don't reflect their employer.
@@ -60,14 +60,7 @@ author's own and don't reflect their employer.
 
 ## General Background Information
 
-Tuberculosis is old infectious disease which still exists and become
-major public health in the world, particularly in developing countries.
-Tuberculosis is linked to environmental factors. This study will analyze
-the effects of multi environmental factors, specially water and
-sanitation on tuberculosis incidence in Asia and Africa regions, where
-the majority of tuberculosis coming from these regions. The water and
-sanitation will be the main exposures and Human Development Index as a
-control variable.
+Tuberculosis is an old infectious disease which still exists and become major public health in the world, particularly in developing countries. In 2023, World Health Organization (WHO) estimated 10.8 million people infected by TB globally with (95% uncertainty interval 10.1-11.7 million), which increased from 10.7 million in 2022. The number is equivalent to 134 incident cases per 100 000 population. 45% and 24% of the cases were detected in South-East Asia and Africa repectively.[@who_data] Tuberculosis has been associated with socioeconomic status, housing conditions, nutrition and multiple environmental factors. Climate Change Phenomena also is suspected to affect tubercolusos both direct and indirect such as temperature, precipitation and humidity change [@Tosepu2024] and worseing air polution [@Andersen2023], agent survival[@Uwishema2023; @ElSayed2020], water resources destruption, crop destruption, and economic destruption, and nutrition [@Kharwadkar2022; @Hong2025; @Mirzabaev2023; @microbes2022; @Cai2021]. In term of Environmental factors on Tuberculosis, most studies examined climatic indicators and air poluttion. There is alimited studies examine the effect of Water and Sanitation on tubercolusis. Althought Tuberculosis is an airborne diseases, lack of access to water and sanitation probably can affect the transmission of tubercolosis because it relates to personal hygiene, home cleaningness, and other infectious diseases and immune system. Therefore, the study aims to explore the effect of water and sanitation on Tuberculosis Incidence Rate in regions, which are major contributors on tuberculosis cases globally namely South-East Asia and Africa. The study also include Human Development Index in the analysis as a control variable. 
 
 ## Description of data and data source
 
@@ -91,7 +84,7 @@ The main aim of this study is to look at the effect of Water and
 Sanitation on on tuberculosis incidence.
 
 RQ: Does access to water and sanitation effect Tuberculosis incidence in
-Asian and African Regions?
+SOuth-East Asia and African Regions?
 
 Null Hypotheisis
 
@@ -118,14 +111,6 @@ tuberculosis incidence
 
 Ha: there is an effect of access to safely managed drinking water on
 tuberculosis incidence
-
-To cite other work (important everywhere, but likely happens first in
-introduction), make sure your references are in the bibtex file
-specified in the YAML header above and have the right bibtex key. Then
-you can include like this:
-
-Examples of reproducible research projects can for instance be found in
-[@mckay2020; @mckay2020a].
 
 {{< pagebreak >}}
 
@@ -160,26 +145,12 @@ better, Hausman Test was performed to determine which model is better.
 NOTE: I still need to discuss and need more advice about the data
 analysis from Dr. Handel
 
-## Schematic of workflow
-
-NOTE: I AM STILL WORKING TO FIGUR THIS ONE OUT Sometimes you might want
-to show a schematic diagram/figure that was not created with code (if
-you can do it with code, do it). @fig-schematic is an example of some -
-completely random/unrelated - schematic that was generated with
-Biorender. We store those figures in the `assets` folder.
-
-```{r}
-#| label: fig-schematic
-#| fig-cap: "A figure that is manually generated and shows some overview/schematic. This has nothing to do with the data, it's just a random one from one of our projects I found and placed here."
-#| echo: FALSE
-knitr::include_graphics(here("assets","antigen-recognition.png"))
-```
 
 ## Data acquisition
 
-The data was downloaded from Worlbank Dataset. However, those data are
+The data was downloaded from Worlbank Dataset. Those data are
 originally from many different courses/ organizations, such as World
-Bank, WHA, UNICEF, UN-HABITAT, EDGAR, and IHME.
+Bank, UNICEF, and UN-HABITAT
 
 ## Data import and cleaning
 
@@ -213,14 +184,8 @@ data analysis:
 
 *Explain anything related to your statistical analyses.*
 
-The study applied Generalized Additive Mixed Model (GAMM). The model can
-capture mixed effect of countries on Tuberculosis Incidence with non
-linear relationship. The data analysis started by looking at the
-relationship between Tuberculosis Incidence and Predictors. Non linear
-relationship was discovered. Human Development Index
-(HDI), Access to basic water and well-managed water show curvature
-relationship, while access to basic sanitation and well-managed
-sanitation show polynomial. There are several models fitted in the study, we start with linear model with all predictors included, followed by Generalized Addictive Models (GAM), Generalized Mixed Addictive Models (GAMM) without interaction, Generalized Mixed Addictive Models (GAMM) with two factor interaction, and Generalized Mixed Addictive Models (GAMM) with two factor interaction after drop interaction which are not significant. After fitting the models, RMSE and AIC were printed to chose the best models. Based on the RMSEs and AICs, GAMM with interaction after deleting unsigniuficant interactions performed best. The RMSE and AIC were visulized using plot for better understanding. 
+The study applied Generalized Additive Mixed Model (GAMM). The model can capture mixed effect of countries on Tuberculosis Incidence with non linear relationship. The data analysis started by looking at the
+relationship between Tuberculosis Incidence and Predictors. Non linear relationship was discovered. Human Development Index (HDI), Access to basic water and well-managed water show curvature relationship, while access to basic sanitation and well-managed sanitation show polynomial. There are several models fitted in the study, we start with linear model with all predictors included, followed by Generalized Addictive Models (GAM), Generalized Mixed Addictive Models (GAMM) without interaction, Generalized Mixed Addictive Models (GAMM) with two factor interaction, and Generalized Mixed Addictive Models (GAMM) with two factor interaction after drop interaction which are not significant. After fitting the models, RMSE and AIC were printed to chose the best models. Based on the RMSEs and AICs, GAMM with interaction after deleting unsigniuficant interactions performed best. The RMSE and AIC were visulized using plot for better understanding. 
 
 To maximize test the performance of the model, machine learning was performed. We created splitted data with 75% train data and 25 % test data and setseed (2345). RMSEs and AICs were printed to see the performance of the models and plotted. The final model was fitted into a machine learning, XGBoost. The method is very plexible and can deal with the data conditions (non-linear relationship, some multicolinearity, and binomial distribution). Finally, the model was tunned. 
 
@@ -231,7 +196,7 @@ To maximize test the performance of the model, machine learning was performed. W
 
 ## Exploratory/Descriptive analysis
 
-Firs of all, the pattern of the data was explored. The trend of Tuberculosis Incidence for each country during the period was assesed using spagethi plots. The ( @fig-1 ) shows that most countries shows a dicrease of tuberculosis incidence over the period of time. 
+Firs of all, the pattern of the data was explored. The trend of Tuberculosis Incidence rate for each country during the period was assesed using spagethi plots. The ( @fig-1 ) shows that most countries shows a dicrease of tuberculosis incidence over the period of time. 
 
 ```{r}
 
@@ -264,7 +229,7 @@ knitr::include_graphics(here("results", "figures", "eda", "plot_all_vars_region.
 
 
 
-As first step of statistical analysis. linearity test was performed, the result shows that there is non-linear relationship between tuberculosis incidence and other predictors. Loess method is used to show the non-linear relationship betwen tuberculosis incidence and predictors. ( @fig-4 ) shows the relationship between tuberculosis incidence and predictors and ( @fig-5 ) show the relationhsip after data transformation. It can be seen that after data transformed, non-linear relationship stil exists. Therefore, Generalized Addittive Mixed Model is used in this study. 
+As first step of statistical analysis. linearity test was performed, the result shows that there is non-linear relationship between tuberculosis incidence rate and other predictors. Loess method is used to show the non-linear relationship betwen tuberculosis incidence rate and predictors. ( @fig-4 ) shows the relationship between tuberculosis incidence and predictors and ( @fig-5 ) show the relationhsip after data transformation. It can be seen that after data transformed, non-linear relationship stil exists. Therefore, Generalized Addittive Mixed Model is used in this study. 
 
 
 ```{r}
@@ -275,6 +240,8 @@ As first step of statistical analysis. linearity test was performed, the result 
 knitr::include_graphics(here("results","figures", "analysis", "plots_tbi_vs_allvars.png"))
 
 ```
+
+
 ```{r}
 #| label: fig-5
 #| fig-cap: "Non-linear relationhsip between Tuberculosis Incidence and Predictors after transfirmation "
@@ -313,7 +280,7 @@ knitr::include_graphics(here("results","figures", "analysis", "plot_aic_rmse.png
 
 ***Result of Final Model***
 
-We fitted a generalized additive mixed model (GAMM) using a negative binomial distribution with a log link to model tuberculosis incidence (TBI) across countries in South East Asia and Africa. The model incorporated smooth functions of year, access to basic and safe water and sanitation services, and the Human Development Index (HDI), as well as interaction terms between key environmental and socioeconomic indicators. A random effect was included for country to account for unobserved heterogeneity. (@tbl-1 ) shows the result of the final model. 
+We fitted a generalized additive mixed model (GAMM) using a negative binomial distribution with a log link to model tuberculosis incidence (TBI) rate across countries in South East Asia and Africa. The model incorporated smooth functions of year, access to basic and safe water and sanitation services, and the Human Development Index (HDI), as well as interaction terms between key environmental and socioeconomic indicators. A random effect was included for country to account for unobserved heterogeneity. (@tbl-1 ) shows the result of the final model. 
 ```{r}
 #| label: tbl-1
 #| tbl-cap: "Summary of GAMM Parametric and Smooth Terms"
@@ -342,7 +309,7 @@ gamm_tbl %>%
 ```
 
 
-The model demonstrated excellent fit, explaining 99.7% of the deviance (adjusted R² = 0.997). Among the smooth terms, year (edf = 3.38, p < 0.001), access to basic water (edf = 6.52, p = 0.013), access to safe water (edf = 1.00, p < 0.001), and HDI (edf = 1.00, p < 0.001) showed significant non-linear associations with TBI. In contrast, basic and safe sanitation services were not significantly associated with TBI after accounting for other variables.
+The model demonstrated excellent fit, explaining 99.7% of the deviance (adjusted R² = 0.997). Among the smooth terms, year (edf = 3.38, p < 0.001), access to basic water (edf = 6.52, p = 0.013), access to safe water (edf = 1.00, p < 0.001), and HDI (edf = 1.00, p < 0.001) showed significant non-linear associations with TBI. In contrast, basic and safe sanitation services were not significantly associated with TBI rate after accounting for other variables.
 
 Notably, several two-dimensional interaction smooths were also statistically significant, including between basic water and HDI (p < 0.001), safe water and HDI (p < 0.001), safe sanitation and basic water (p < 0.001), and safe water and basic water (p < 0.001), suggesting complex joint effects of environmental infrastructure and development on TBI patterns. The random effect for country was highly significant, capturing substantial variation across national contexts.
 
@@ -403,47 +370,43 @@ Figure (@fig-10) shows the results of hyperparameter tuning for the XGBoost mode
 
 *Summarize what you did, what you found and what it means.*
 
+This study highlights the significant impact of environmental infrastructure and socioeconomic development on tuberculosis incidence (TBI) in South East Asia and Africa. The use of a generalized additive mixed model (GAMM) with a negative binomial distribution and log link allowed us to flexibly assess both linear and non-linear associations between predictors and TBI rates, accounting for random variation between countries. Our model demonstrated excellent fit, explaining 99.7% of the deviance, and identified multiple significant associations between water access, development indices, and TBI incidence, consistent with and extending prior literature.
 
-I am still working on it and read more paper to use in this discussion part. I will complete this part this week 
+The significant non-linear effect of year on TBI incidence underscores the ongoing temporal trends in tuberculosis control, shaped by global health policies and national-level interventions over time. Previous studies have documented a steady decline in TB incidence rates globally, albeit at a slower rate than needed to meet elimination targets, particularly in high-burden settings such as sub-Saharan Africa and Southeast Asia [@pai2016tuberculosis; @world2023global]. Our findings align with these trends and further demonstrate the utility of flexible modeling approaches in capturing such non-linear patterns over extended time frames.
+
+The significant associations of access to basic and safe water with TBI reinforce the importance of environmental determinants in TB control. Limited access to clean water can contribute to a cycle of poor hygiene, malnutrition, and vulnerability to infectious diseases, including TB [@esrey1991effects; @pruitt2021water]. Our identification of complex non-linear relationships suggests that the effects of water access on TB are not constant but vary depending on context, infrastructure level, and interaction with other factors.
+
+Moreover, the Human Development Index (HDI) was significantly associated with TBI rates in a non-linear fashion. This is consistent with research indicating that higher levels of human development—including education, life expectancy, and income—are linked to reduced susceptibility to TB through better living conditions, nutrition, and access to healthcare services [@siroka2016assessing; @wilkinson1999inequality]. These findings reaffirm the critical role of social determinants in TB epidemiology and provide quantitative support for global policy frameworks that integrate development with infectious disease control.
+
+Notably, basic and safe sanitation access did not show a significant independent association with TB in our adjusted model. While sanitation is undeniably important for overall public health, its isolated effect on TB incidence may be attenuated once other covariates such as water access and HDI are considered. This finding echoes studies showing that while sanitation is crucial for preventing diseases like diarrhea and helminth infections, its direct effect on TB—which is primarily airborne—may be more indirect and mediated by broader health and development pathways [@bartram2010water; @pruss2002estimating].
+
+The interaction terms in our model revealed statistically significant joint effects between several pairs of variables, suggesting that infrastructure and development indicators do not act independently. For instance, the interaction between basic water and HDI supports prior findings that the protective effects of environmental infrastructure are magnified in settings with higher socioeconomic development [@lienhardt2001risk; @matos2013tuberculosis]. Likewise, the interaction between safe water and HDI emphasizes the synergistic value of combining access to safe water with broader improvements in human development.
+
+Interactions between safe sanitation and basic water, as well as between safe water and basic water, also showed significant effects on TBI, implying that layered improvements in environmental infrastructure produce more than additive benefits. These patterns align with ecological frameworks emphasizing cumulative and contextual effects in public health interventions [@marmot2008closing; @aagaard2014integrated].
+
+Importantly, the random effects for country were highly significant, indicating unmeasured country-level heterogeneity in TB patterns. These may include factors such as political stability, health system capacity, HIV prevalence, urbanization patterns, or population density—all known modifiers of TB burden [@gupta2015addressing; @reid2019building].
+
+Our findings have several policy implications. First, they highlight the need for multisectoral strategies that address both environmental conditions and broader socioeconomic development to combat TB effectively. Investments in water infrastructure should be accompanied by programs targeting education, nutrition, housing, and healthcare access [@onozaki2015impact; @udwadia2014multidrug]. Second, the complex interactions observed suggest that context-specific interventions are essential. A one-size-fits-all approach may fail to capture the unique synergy between environmental and developmental factors within each country.
+
 
 ## Strengths and Limitations
 
-*Discuss what you perceive as strengths and limitations of your
-analysis.*
+The strength of our study lies in the use of a flexible GAMM framework that accommodates non-linear relationships and interaction effects, offering a nuanced view of TB determinants. By including a random effect for country, we account for latent national characteristics that may bias fixed-effect estimates. However, our study has limitations. The ecological nature of the data precludes individual-level inferences, and potential measurement error in national statistics could affect the reliability of some estimates.
+
+Despite these limitations, this study adds to the growing evidence that TB incidence is deeply embedded in broader developmental and environmental systems. Our findings support the WHO End TB Strategy, which emphasizes tackling the social determinants of TB alongside biomedical interventions [@who2015end; @hargreaves2011social].
 
 ## Conclusions
 
-*What are the main take-home messages?*
+This study reinforces that tuberculosis incidence in South East Asia and Africa is not solely a biomedical issue but is deeply influenced by environmental infrastructure and socioeconomic development. Our findings demonstrate that access to clean water and improvements in human development significantly reduce TB burden, with their effects magnified when considered jointly. The non-linear and interactive associations revealed by our model highlight the importance of tailored, multisectoral approaches that integrate public health with infrastructure and development planning. To achieve meaningful and sustained reductions in TB, especially in high-burden regions, global health strategies must move beyond treatment alone and address the root structural determinants of disease.
 
-These findings underscore the significant role of socioeconomic
-conditions and sanitation infrastructure in tuberculosis control. While
-access to basic and safe water was not a significant predictor,
-improvements in sanitation and overall socioeconomic development (HDI)
-were strongly associated with lower tuberculosis incidence. Given the
-significant country-level differences, tuberculosis prevention
-strategies should be tailored to national contexts, emphasizing
-improvements in living standards and sanitation access. These results
-provide valuable insights for policymakers aiming to design targeted
-public health interventions in high-burden settings.
 
-*Include citations in your Rmd file using bibtex, the list of references
-will automatically be placed at the end*
-
-This paper [@leek2015] discusses types of analyses.
-
-These papers [@mckay2020; @mckay2020a] are good examples of papers
-published using a fully reproducible setup similar to the one shown in
-this template.
-
-Note that this cited reference will show up at the end of the document,
-the reference formatting is determined by the CSL file specified in the
-YAML header. Many more style files for almost any journal [are
-available](https://www.zotero.org/styles). You also specify the location
-of your bibtex reference file in the YAML. You can call your reference
-file anything you like.
 
 {{< pagebreak >}}
 
 # References
 
-I will include reference for the sourse of data in the next step.
+
+
+
+
+
