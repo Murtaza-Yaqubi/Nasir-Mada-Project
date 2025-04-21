@@ -1,39 +1,37 @@
 ---
-title: "The effects of Water and Sanitation on Tuberculosis Incidence in South East Asian and African countris"
+title: "The effects of Water and Sanitation on Tuberculosis Incidence in South East Asian and African countries"
 author: ""
 format:
   docx:
     toc: false
     number-sections: true
     highlight-style: github
-bibliography: assets/dataanalysis-references.bib
+execute:
+  echo: false
+bibliography: assets/citations.bib
 csl: assets/american-journal-of-epidemiology.csl
-editor: 
-  markdown: 
+editor:
+  markdown:
     wrap: 72
 ---
 
-This uses MS Word as output format. [See
-here](https://quarto.org/docs/output-formats/ms-word.html) for more
-information. You can switch to other formats, like html or pdf. See [the
-Quarto documentation](https://quarto.org/) for other formats.
+
+
 
 ```{r, echo=FALSE, message=FALSE}
 # load a few R packages
 library(here)
 library(knitr)
-install.packages("dplyr")
+#install.packages("dplyr")
 library(dplyr)
-install.packages("gt")
+#install.packages("gt")
 library(gt)
 ```
 
 **Authors**
 
 -   Muhammad Nasir$^{1,2,*}$ (ORCID: 0000-0000-1234-5678)
--   Second Author$^{3, *}$
--   Third Author$^{3, \dagger}$
--   Last Author$^{1, 2, \land}$
+
 
 **Author affiliations**
 
@@ -50,9 +48,10 @@ author's own and don't reflect their employer.
 
 {{< pagebreak >}}
 
-# Summary/Abstract
+# Abstract
 
-*Write a summary of your project.*
+Tuberculosis (TB) remains a significant global health concern, particularly in low- and middle-income countries. In 2023, an estimated 10.8 million people contracted TB, with nearly 70% of cases reported in South-East Asia and Africa. While TB is primarily airborne, environmental and socioeconomic factors, including water and sanitation access, may influence transmission by affecting hygiene and immune function. This study aims to investigate the impact of access to water and sanitation services on TB incidence across South-East Asia and Africa, incorporating the Human Development Index (HDI) as a control for socioeconomic context. A Generalized Additive Mixed Model (GAMM) was applied to longitudinal data from 2000 to 2022. The model included smooth terms for year, water and sanitation indicators, and HDI, with country as a random effect.The model showed excellent fit (adjusted R² = 0.997), with significant non-linear effects observed for year, access to basic water (p = 0.013), safe water (p < 0.001), and HDI (p < 0.001). Sanitation variables were not independently significant. However, key interactions—such as between water access and HDI—were highly significant (p < 0.001), suggesting complex environmental-development dynamics influencing TB risk.In conclusion, expanding water access and addressing development disparities may be critical in reducing TB burden in high-incidence regions.
+
 
 {{< pagebreak >}}
 
@@ -202,25 +201,30 @@ Firs of all, the pattern of the data was explored. The trend of Tuberculosis Inc
 
 #| label: fig-1
 #| fig-cap: "Trends of Tuberculosis of each country from 2000 to 2020"
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results", "figures", "eda", "tbi_spageti.png"))
+
 ```
 
 Figure ( @fig-2 ) shows the trend of percentage of population using safe water, basic water, safe sanitation, basic sanitation, tuberculosis incidence, and human development index over the prerion for each country. It can be seen that the percentage of population having access to water and sanitation and human development index increase over the time, while the tuberculosis incidence decrease. Figure ( @fig-3 ) show the trends of all variables based on region. 
 
 ```{r}
+
 #| label: fig-2
 #| fig-cap: "Trends of All Variables over the time 2000 to 2020 by countries"
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results", "figures", "eda", "plot_all_vars.png"))
+
 ```
 
 
 ```{r}
+
 #| label: fig-3
 #| fig-cap: "Trends of All Variables over the time 2000 to 2020 by countries"
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results", "figures", "eda", "plot_all_vars_region.png"))
+
 ```
 
 
@@ -236,17 +240,19 @@ As first step of statistical analysis. linearity test was performed, the result 
 
 #| label: fig-4
 #| fig-cap: "Non-linear relationhsip between Tuberculosis Incidence and Predictors "
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "analysis", "plots_tbi_vs_allvars.png"))
 
 ```
 
 
 ```{r}
+
 #| label: fig-5
 #| fig-cap: "Non-linear relationhsip between Tuberculosis Incidence and Predictors after transfirmation "
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "analysis", "plot_transformed.png"))
+
 ```
 
 
@@ -259,7 +265,7 @@ tuberculosis Incidence and all predictors. Since they show non linearity, spearm
 
 #| label: fig-6
 #| fig-cap: "Spearman Correlation Matrix "
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "eda", "correlation_matrix.png"))
 
 ```
@@ -274,14 +280,16 @@ We start with linear model with all predictors included, followed by Generalized
 
 #| label: fig-7
 #| fig-cap: "AIC and RMSE "
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "analysis", "plot_aic_rmse.png"))
+
 ```
 
 ***Result of Final Model***
 
 We fitted a generalized additive mixed model (GAMM) using a negative binomial distribution with a log link to model tuberculosis incidence (TBI) rate across countries in South East Asia and Africa. The model incorporated smooth functions of year, access to basic and safe water and sanitation services, and the Human Development Index (HDI), as well as interaction terms between key environmental and socioeconomic indicators. A random effect was included for country to account for unobserved heterogeneity. (@tbl-1 ) shows the result of the final model. 
 ```{r}
+
 #| label: tbl-1
 #| tbl-cap: "Summary of GAMM Parametric and Smooth Terms"
 #| echo: false
@@ -304,7 +312,7 @@ gamm_tbl %>%
     term = "Term", estimate = "Estimate", std.error = "Std. Error",
     edf = "EDF", chi_sq = "Chi-square", p.value = "p-value"
   ) %>%
-  fmt_missing(everything(), missing_text = "-")
+  sub_missing(everything(), missing_text = "-")
 
 ```
 
@@ -326,7 +334,7 @@ Using Splitted / generated data shows that the model has a consistent result. (@
 ```{r}
 #| label: fig-8
 #| fig-cap: "Predicted vs Observed TBI originalvs generated data "
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "analysis", "plot_ob_pre_ml_vs_ori.png"))
 ```
 
@@ -341,20 +349,24 @@ For the test data (left side), most of the points are still close to the line, b
 Overall, the plot shows that the model is reliable and provides accurate predictions for TBI, even on data it hasn’t seen before. This suggests the model can be useful for forecasting TB burden in similar settings.
 
 ```{r}
+
 #| label: fig-9
 #| fig-cap: "Predicted and observed value for Xgboost using train and test data"
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "analysis", "plot_obs_pred_ml.png"))
+
 ```
 
 
 ***Tunning for XGBoost***
 
 ```{r}
+
 #| label: fig-10
 #| fig-cap: "Tunning Result for XGBoost"
-#| echo: FALSE
+#| echo: false
 knitr::include_graphics(here("results","figures", "analysis", "autoplot_xgb_tuning.png"))
+
 ```
 
 Figure (@fig-10) shows the results of hyperparameter tuning for the XGBoost model, showing how different parameter values affected the model’s performance, measured by root mean square error (RMSE). Each dot represents one combination of hyperparameters tested during cross-validation. These results highlight that careful tuning of parameters, especially learning rate, tree depth, and sampling rate, is essential to significantly improve model accuracy. The tuning process allowed us to identify a combination of settings that minimized prediction error and led to a more reliable model.
@@ -386,14 +398,12 @@ Interactions between safe sanitation and basic water, as well as between safe wa
 
 Importantly, the random effects for country were highly significant, indicating unmeasured country-level heterogeneity in TB patterns. These may include factors such as political stability, health system capacity, HIV prevalence, urbanization patterns, or population density—all known modifiers of TB burden [@gupta2015addressing; @reid2019building].
 
-Our findings have several policy implications. First, they highlight the need for multisectoral strategies that address both environmental conditions and broader socioeconomic development to combat TB effectively. Investments in water infrastructure should be accompanied by programs targeting education, nutrition, housing, and healthcare access [@onozaki2015impact; @udwadia2014multidrug]. Second, the complex interactions observed suggest that context-specific interventions are essential. A one-size-fits-all approach may fail to capture the unique synergy between environmental and developmental factors within each country.
+Our findings have several policy implications. First, they highlight the need for multisectoral strategies that address both environmental conditions and broader socioeconomic development to combat TB effectively. Investments in water infrastructure should be accompanied by programs targeting education, nutrition, housing, and healthcare access [@onozaki2015impact]. Second, the complex interactions observed suggest that context-specific interventions are essential. A one-size-fits-all approach may fail to capture the unique synergy between environmental and developmental factors within each country.
 
 
 ## Strengths and Limitations
 
 The strength of our study lies in the use of a flexible GAMM framework that accommodates non-linear relationships and interaction effects, offering a nuanced view of TB determinants. By including a random effect for country, we account for latent national characteristics that may bias fixed-effect estimates. However, our study has limitations. The ecological nature of the data precludes individual-level inferences, and potential measurement error in national statistics could affect the reliability of some estimates.
-
-Despite these limitations, this study adds to the growing evidence that TB incidence is deeply embedded in broader developmental and environmental systems. Our findings support the WHO End TB Strategy, which emphasizes tackling the social determinants of TB alongside biomedical interventions [@who2015end; @hargreaves2011social].
 
 ## Conclusions
 
