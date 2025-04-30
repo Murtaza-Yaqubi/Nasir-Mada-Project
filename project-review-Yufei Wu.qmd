@@ -1,0 +1,155 @@
+---
+title: Project Review_Yufei Wu
+author: Yufei Wu
+date: 04/24/2025
+format: 
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+---
+
+# Overview
+
+Title of project: The effects of Water and Sanitation on Tuberculosis Incidence in South East Asian and African countries
+
+Name of project author(s): Muhammad Nasir
+
+Name of project reviewer: Yufei Wu
+
+
+# Specific project content evaluation
+
+## Background, Context and Motivation
+
+### Feedback and Comments
+
+The introduction part provides a clear description of global TB burden and regional focus of South-East Asia and Africa. The previous research gap is also stated. Only several sentences need editing for grammar.
+
+### Summary assessment (PICK ONE, DELETE THE OTHERS)
+* strong contextualization and motivation
+
+
+## Question description
+
+### Feedback and Comments
+
+The research question is clearly described.
+
+### Summary assessment
+* question/hypotheses fully clear
+
+
+## Data description
+
+### Feedback and Comments
+
+The data source is provided. Although the codebook is not provided, the major variables are enumerated here.
+
+### Summary assessment
+* source and overall structure of data well explained
+
+
+## Data wrangling and exploratory analysis
+
+### Feedback and Comments
+
+The cleaning steps are outlined. The overall exploratory analysis is good. However, the method part mentioned EDA included boxplots, but it is not actually embedded. Besides, the figure captions and links to figures do not seem to work properly. 
+
+### Summary assessment
+* some weaknesses in wrangling and exploratory component
+
+
+
+
+## Appropriateness of Analysis
+
+### Feedback and Comments
+
+The analysis is detailed and thorough, including AIC/RMSE comparisons among LM, GAM, GAMM, and GAMM + interactions, which is a good practice. In addition, it will be better to provide cross-validated RMSE to show predictive validity if possible.
+
+### Summary assessment
+* strong and reasonable analysis
+
+
+## Presentation
+
+### Feedback and Comments
+
+Some figure captions are not rendered correctly, and some figure references show “?@fig-X”.
+
+### Summary assessment
+* results are presented ok, with room for improvement
+
+
+
+## Discussion/Conclusions
+
+### Feedback and Comments
+
+The discussion part can link the findings to policy implications, which highlight the application of the project. The strengths and limitations are also acknowledged.
+
+### Summary assessment
+* strong, complete and clear discussion
+
+
+## Further comments
+
+Further polish the figures and tables to meet the publication standard.
+
+
+
+# Overall project content evaluation
+
+## Structure
+
+### Feedback and Comments
+
+The project is generally well structured. However, some template files need to be removed, like the "eda-v2.qmd", and the blank Supplementary-Material.
+
+### Summary assessment
+* mostly clear, but some confusing parts (e.g. useless files, things in the wrong folders)
+
+
+
+## Documentation 
+ 
+### Feedback and Comments
+
+The project is well documented, except for the interpretation paragraph at the end of the EDA file, which would be better if written in English.
+
+### Summary assessment
+* fully and well documented
+
+
+
+## Reproducibility
+
+### Feedback and Comments
+
+The manuscript and processing file can be fully reproduced. However, there are some issues in other code files. There is an error in line 292 of EDA file saying "Error in readRDS(con, refhook = refhook) : cannot open the connection", which suggests the file pathway ("code", "eda-code", "tables", "summary_table.rds") is not correct. There's also an error in the code chunk starting at line 109 in the statistical-analysis file, which says "Error: object 'asia_africa_long' not found".
+
+
+### Summary assessment
+* small parts not reproducible or required manual intervention 
+
+
+
+## Thoroughness
+
+### Feedback and Comments
+
+The study is thorough, with multiple models tested. The model assessment shows robustness.
+
+### Summary assessment
+* strong level of thorougness
+
+
+## Further comments
+
+The overall analysis is impressive. The manuscript may need further polishing to make sure the figures are of publication-level quality.
+
+
+
+
+
